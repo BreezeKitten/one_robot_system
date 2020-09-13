@@ -60,6 +60,11 @@ class Subscriber:
                         print('no header in data!')
             self.disconnect()
     
+    def background_callback(self):
+        t = threading.Thread(target=self.start_callback)
+        t.start()
+        return t
+    
         
 class Publisher:
     def __init__(self, host, port):
@@ -73,7 +78,7 @@ class Publisher:
     def accept_connect(self):
         self.c, self.addr = self.socket.accept()     # 建立客户端连接
         print('连接地址：', self.addr)
-        self.socket.settimeout(3)
+        
         
     def wait_connect(self):
         t = threading.Thread(target=self.accept_connect)
@@ -81,8 +86,9 @@ class Publisher:
         return t
     
     def publish_msg(self, msg):
-        self.c.send(Doki_msg.encode())
+        self.socket.settimeout(3)
         try:
+            self.c.send(Doki_msg.encode())
             response = self.c.recv(1024)
             if response == b'alive':
                 self.c.send(msg.encode())
@@ -90,4 +96,5 @@ class Publisher:
                 print('Doki response error')
         except:
             print('No Doki response')
+            self.socket.settimeout = None
         
