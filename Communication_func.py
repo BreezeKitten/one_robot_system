@@ -41,24 +41,29 @@ class Subscriber:
             print('still not connect!')
         else:
             self.callback_flag = True
+            self.socket.settimeout(3)
             while(self.callback_flag):
-                raw_data = self.socket.recv(1024).decode()
-                if raw_data == '':
-                    print('empty data, close connect!')
-                    self.callback_flag = False
-                else:
-                    data = json.loads(raw_data)
-                    if 'header' in data:
-                        if data['header'] == 'Doki':
-                            print('still alive!')
-                            self.socket.send(b'alive')
-                        elif data['header'] == 'Message':
-                            self.callback(data)
-                        else:
-                            print('header error!')
+                try:
+                    raw_data = self.socket.recv(1024).decode()
+                    if raw_data == '':
+                        print('empty data, close connect!')
+                        self.callback_flag = False
                     else:
-                        print('no header in data!')
+                        data = json.loads(raw_data)
+                        if 'header' in data:
+                            if data['header'] == 'Doki':
+                                print('still alive!')
+                                self.socket.send(b'alive')
+                            elif data['header'] == 'Message':
+                                self.callback(data)
+                            else:
+                                print('header error!')
+                        else:
+                            print('no header in data!')
+                except:
+                    continue
             self.disconnect()
+
     
     def background_callback(self):
         t = threading.Thread(target=self.start_callback)
@@ -96,5 +101,5 @@ class Publisher:
                 print('Doki response error')
         except:
             print('No Doki response')
-            self.socket.settimeout = None
+            self.socket.settimeout(None)
         
