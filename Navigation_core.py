@@ -59,20 +59,20 @@ TIME_OUT_FACTOR = 4
 
 
 
-Network_Path_Dict = {'2':'2_robot_network/gamma09_95_0429/test.ckpt', 
-                     '3-1':'multi_robot_network/3_robot_network/0824_925/3_robot.ckpt',
-                     '3-2':'multi_robot_network/3_robot_network/0826_933/3_robot.ckpt'
-                     
-        }
+Network_Path_Dict = {'2':'Network/2_robot_network/gamma09_95_0429/test.ckpt', 
+                     '3':'Network/3_robot_network/0826_933/3_robot.ckpt'}
 
-
+Network_Dict = {}
     
 def Build_network(session, robot_num, base_network_path):
     N = Network.Network_Dict[str(robot_num)](str(robot_num))
     N.restore_parameter(session, base_network_path)        
     return N
 
-
+def Build_all_Network(session, path_dict):
+    global Network_Dict
+    for item in path_dict:
+        Network_Dict[item] = Build_network(session, int(item), path_dict[item])
 
 def Calculate_distance(x1, y1, x2, y2):
     return np.sqrt(math.pow( (x1-x2) , 2) + math.pow( (y1-y2) , 2))
@@ -92,8 +92,10 @@ def Check_Goal(agent, position_tolerance, orientation_tolerance):
     else:
         return False
 
-def Predict_action_value(session, network, main_agent, Agent_Set, V_pred, W_pred, base_network):
+def Predict_action_value(session, main_agent, Agent_Set, V_pred, W_pred, base_network):
     Other_Set, Value_list = [], []
+    network = Network_Dict[str(base_network)]
+    
     for agent in Agent_Set:
         if main_agent.name != agent.name:
             Other_Set.append(agent)
@@ -139,31 +141,22 @@ def Predict_action_value(session, network, main_agent, Agent_Set, V_pred, W_pred
                 
     return action_value
 
-
-def Choose_action_from_Network(session, main_agent, Agent_Set, epsilon, base_network):
-    dice = random.random()
+def Choose_action_from_Network(session, main_agent, Agent_Set, base_network):
     action_value_max = -999999   
-    if dice < epsilon:
-        linear_acc = -linear_acc_max + random.random() * 2 * linear_acc_max
-        angular_acc = -angular_acc_max + random.random() * 2 * angular_acc_max
+    linear_acc_set = np.arange(-linear_acc_max, linear_acc_max, 1)
+    angular_acc_set = np.arange(-angular_acc_max, angular_acc_max, 1)
+    for linear_acc in linear_acc_set:
         V_pred = np.clip(main_agent.state.V + linear_acc * deltaT, -V_max, V_max)
-        W_pred = np.clip(main_agent.state.W + angular_acc * deltaT, -W_max, W_max)
-    else:
-        linear_acc_set = np.arange(-linear_acc_max, linear_acc_max, 1)
-        angular_acc_set = np.arange(-angular_acc_max, angular_acc_max, 1)
-        for linear_acc in linear_acc_set:
-            V_pred = np.clip(main_agent.state.V + linear_acc * deltaT, -V_max, V_max)
-            for angular_acc in angular_acc_set:
-                W_pred = np.clip(main_agent.state.W + angular_acc * deltaT, -W_max, W_max)
-                action_value = Predict_action_value(main_agent, Agent_Set, V_pred, W_pred, base_network)
-                if action_value > action_value_max:
-                    action_value_max = action_value
-                    action_pair = [V_pred, W_pred]                    
-        V_pred = action_pair[0]
-        W_pred = action_pair[1]
-        #print(action_value_max)
+        for angular_acc in angular_acc_set:
+            W_pred = np.clip(main_agent.state.W + angular_acc * deltaT, -W_max, W_max)
+            action_value = Predict_action_value(main_agent, Agent_Set, V_pred, W_pred, base_network)
+            if action_value > action_value_max:
+                action_value_max = action_value
+                action_pair = [V_pred, W_pred]                    
+    V_pred = action_pair[0]
+    W_pred = action_pair[1]
+    #print(action_value_max)
     return V_pred, W_pred
-
 
 def Choose_action(session, main_agent, Agent_Set, base_network):
     if main_agent.mode == 'Static':
@@ -172,28 +165,29 @@ def Choose_action(session, main_agent, Agent_Set, base_network):
         V_next = main_agent.state.V + random.random() - 0.5
         W_next = main_agent.state.W + random.random() - 0.5
     if main_agent.mode == 'Greedy':
-        V_next, W_next = Choose_action_from_Network(session, main_agent, Agent_Set, 0, base_network)
+        V_next, W_next = Choose_action_from_Network(session, main_agent, Agent_Set, base_network)
         
     return V_next, W_next
 
-
-
+def Agent_Set_Callback(data):
+    agent_num = data['agent_num']
+    main_agent_name = data['main_agent_name']
+    Agent_Set = []
+    Agent_data = data['Agent_data']
+    for agent_dict in Agent_data:
+        agent = Agent.DicttoAgent(agent_dict)
+        Agent_Set.append(agent)
+        if agent.name == main_agent_name:
+            main_agent = copy.deepcopy(agent)
+    if agent_num != len(Agent_Set):
+        print('robot num error!')
+    else:
+        Navigation_func()
+        
+  
 
 if __name__ == '__main__':
     NOW =  datetime.datetime.now().strftime('%Y%m%d-%H%M%S')
-    print('Test!')
-    print(Network_Path_Dict)    
-    sess = tf.Session(config=tf.ConfigProto(gpu_options=gpu_options))
-    
-    Robot_num = int(input('How many robots: '))
-    Base_Network_path = input('Base network path: ')
-    Base_Network_num = int(input('Base network num: '))
-    
-    print('Build Network for ', Robot_num, ' robots with ', Base_Network_num, ' robot network at ', Base_Network_path)
-        
-    Value, Network_list, Train = Build_network(sess, Robot_num, Base_Network_num, Base_Network_path)
-    
-    SAVE_PATH = input('Save Path: ')
 
 
     

@@ -127,7 +127,18 @@ class Agent():
         file.close()
         for state in self.Path:
             state.Record_state(file_name)
-        
+            
+    def Transform_to_Dict(self):
+        D = {}
+        D['name'], D['Px'], D['Py'], D['Pth'], D['V'], D['W'], D['r'] = self.name, self.state.Px, self.state.Py, self.state.Pth, self.state.V, self.state.W, self.state.r
+        D['gx'], D['gy'], D['gth'],  D['rank'], D['mode'] = self.gx, self.gy, self.gth, self.mode
+        return D
+
+
+def DicttoAgent(agent_dict):
+    return Agent(agent_dict['name'], agent_dict['Px'], agent_dict['Py'], agent_dict['Pth'], agent_dict['V'], agent_dict['W'], agent_dict['r'], 
+                 agent_dict['gx'], agent_dict['gy'], agent_dict['gth'],  agent_dict['rank'], agent_dict['mode'])
+
     
 def Correct_angle(angle):
     angle = m.fmod(angle, 2*m.pi)

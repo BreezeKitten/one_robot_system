@@ -63,7 +63,6 @@ class Subscriber:
                 except:
                     continue
             self.disconnect()
-
     
     def background_callback(self):
         t = threading.Thread(target=self.start_callback)
