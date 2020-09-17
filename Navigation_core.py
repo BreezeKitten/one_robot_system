@@ -17,6 +17,7 @@ import os
 import Agent
 import Network
 import Combination
+import Communication_func as Comm
 
 tf.reset_default_graph()
 gpu_options = tf.GPUOptions(per_process_gpu_memory_fraction=0.20) 
@@ -62,19 +63,48 @@ TIME_OUT_FACTOR = 4
 Network_Path_Dict = {'2':'Network/2_robot_network/gamma09_95_0429/test.ckpt', 
                      '3':'Network/3_robot_network/0826_933/3_robot.ckpt'}
 
-Network_Dict = {}
+Network_Dict, Value_Dict = {}, {}
 Main_Agent, Agent_List = [], []
-sess = tf.Session()
-    
-def Build_network(session, robot_num, base_network_path):
-    N = Network.Network_Dict[str(robot_num)](str(robot_num))
-    N.restore_parameter(session, base_network_path)        
-    return N
+sess = tf.Session(config=tf.ConfigProto(allow_soft_placement=True, log_device_placement=True))
 
-def Build_all_Network(session, path_dict):
+    
+#def Build_network(session, robot_num, base_network_path):
+#    N = Network.Network_Dict[str(robot_num)](str(robot_num))
+#    N.restore_parameter(session, base_network_path)        
+#    return N
+    
+def Build_network(session, robot_num, base_network):
+    Network_set = []
+    item_list = [str(i+2) for i in range(robot_num-1)]
+    Comb_list = Combination.Combination_list(item_list, base_network - 1)
+    for item in Comb_list:
+        name = '1'
+        for i in item: 
+            name += i
+        Network_set.append(Network.Network_Dict[str(base_network)](name))
+
+
+    with tf.name_scope('Pred_value'):
+        smaller_value_list = [Network_set[0].value]
+        for i in range(len(Network_set)-1):
+            smaller_value_list.append(tf.minimum(smaller_value_list[i], Network_set[i+1].value))
+        pred_value = smaller_value_list[-1]
+            
+    for item in Network_set:
+        item.restore_parameter(session, Network_Path_Dict[str(base_network)])
+        
+    return pred_value, Network_set
+
+
+
+def Build_all_Network(session, path_dict, max_robot_num, max_base_num):
     global Network_Dict
-    for item in path_dict:
-        Network_Dict[item] = Build_network(session, int(item), path_dict[item])
+    item_list = [i for i in range(2,max_robot_num)]
+    for item in item_list:
+        if item > max_base_num:
+            Value_Dict[str(item)], Network_Dict[str(item)] = Build_network(session, item, max_base_num)
+        else:
+            Value_Dict[str(item)], Network_Dict[str(item)] = Build_network(session, item, item)
 
 def Calculate_distance(x1, y1, x2, y2):
     return np.sqrt(math.pow( (x1-x2) , 2) + math.pow( (y1-y2) , 2))
@@ -93,11 +123,10 @@ def Check_Goal(agent, position_tolerance, orientation_tolerance):
         return True
     else:
         return False
-
-def Predict_action_value(session, main_agent, Agent_Set, V_pred, W_pred, base_network):
-    Other_Set, Value_list = [], []
-    network = Network_Dict[str(base_network)]
     
+def Predict_action_value(session, main_agent, Agent_Set, V_pred, W_pred, base_network):
+    Network_list = Network_Dict[str(len(Agent_Set))]
+    Other_Set, State_list = [], []
     for agent in Agent_Set:
         if main_agent.name != agent.name:
             Other_Set.append(agent)
@@ -118,12 +147,17 @@ def Predict_action_value(session, main_agent, Agent_Set, V_pred, W_pred, base_ne
             else:   
                 m12 = 1
             other_state += [m11, m12, m13, obs_state.x, obs_state.y, obs_state.Vx, obs_state.Vy, obs_state.r]
+        State_list.append([other_state])
+            
+    if len(State_list) == len(Network_list):
         state_dict = {}
-        state_dict[network.state] = [other_state]
-        value_matrix = session.run(network.value, feed_dict = state_dict)
-        Value_list.append(value_matrix[0][0])
-    Value = min(Value_list)    
-    
+        for i in range(len(State_list)):
+            state_dict[Network_list[i].state] = State_list[i]
+    else:
+        print('robot num error')
+        return 0
+    value_matrix = session.run(Value_Dict[str(len(Agent_Set))], feed_dict = state_dict)
+
     R = 0
     
     main_agent_pred = Agent.Agent('Pred', pred_state.Px, pred_state.Py, pred_state.Pth, pred_state.V, pred_state.W, pred_state.r, main_agent.gx, main_agent.gy, main_agent.gth, main_agent.rank)
@@ -139,18 +173,21 @@ def Predict_action_value(session, main_agent, Agent_Set, V_pred, W_pred, base_ne
                 else:   
                     R = Collision_equ_penalty
                 break
-    action_value = R + Value
+    action_value = R + value_matrix[0][0]
                 
+    return action_value
+              
     return action_value
 
 def Choose_action_from_Network(session, main_agent, Agent_Set, base_network):
+    
     action_value_max = -999999   
     linear_acc_set = np.arange(-linear_acc_max, linear_acc_max, 1)
     angular_acc_set = np.arange(-angular_acc_max, angular_acc_max, 1)
     for linear_acc in linear_acc_set:
         V_pred = np.clip(main_agent.state.V + linear_acc * deltaT, -V_max, V_max)
         for angular_acc in angular_acc_set:
-            W_pred = np.clip(main_agent.state.W + angular_acc * deltaT, -W_max, W_max)
+            W_pred = np.clip(main_agent.state.W + angular_acc * deltaT, -W_max, W_max)           
             action_value = Predict_action_value(session, main_agent, Agent_Set, V_pred, W_pred, base_network)
             if action_value > action_value_max:
                 action_value_max = action_value
@@ -158,6 +195,7 @@ def Choose_action_from_Network(session, main_agent, Agent_Set, base_network):
     V_pred = action_pair[0]
     W_pred = action_pair[1]
     #print(action_value_max)
+    
     return V_pred, W_pred
 
 def Choose_action(session, main_agent, Agent_Set, base_network):
@@ -193,11 +231,20 @@ def Navigation_func():
     else:
         V_cmd, W_cmd = Choose_action(sess, Main_Agent, Agent_List, 3)
     print(V_cmd, W_cmd)
+    msg = {'header':'Message','V':V_cmd, 'W':W_cmd}
+    pub.publish_msg(json.dumps(msg))
+    
     
     
 
 if __name__ == '__main__':
     NOW =  datetime.datetime.now().strftime('%Y%m%d-%H%M%S')
-    Build_all_Network(sess, Network_Path_Dict)
-
+    Build_all_Network(sess, Network_Path_Dict, 10, 3)
+    pub = Comm.Publisher('127.0.0.1',12346)
+    pub.set_pub()
+    pub.wait_connect()
+    sub = Comm.Subscriber('127.0.0.1',12345, cb_func=Agent_Set_Callback)
+    sub.connect()
+    t = sub.background_callback()
+    
     
