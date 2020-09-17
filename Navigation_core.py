@@ -63,6 +63,8 @@ Network_Path_Dict = {'2':'Network/2_robot_network/gamma09_95_0429/test.ckpt',
                      '3':'Network/3_robot_network/0826_933/3_robot.ckpt'}
 
 Network_Dict = {}
+Main_Agent, Agent_List = [], []
+sess = tf.Session()
     
 def Build_network(session, robot_num, base_network_path):
     N = Network.Network_Dict[str(robot_num)](str(robot_num))
@@ -117,7 +119,7 @@ def Predict_action_value(session, main_agent, Agent_Set, V_pred, W_pred, base_ne
                 m12 = 1
             other_state += [m11, m12, m13, obs_state.x, obs_state.y, obs_state.Vx, obs_state.Vy, obs_state.r]
         state_dict = {}
-        state_dict[network.state] = other_state
+        state_dict[network.state] = [other_state]
         value_matrix = session.run(network.value, feed_dict = state_dict)
         Value_list.append(value_matrix[0][0])
     Value = min(Value_list)    
@@ -149,7 +151,7 @@ def Choose_action_from_Network(session, main_agent, Agent_Set, base_network):
         V_pred = np.clip(main_agent.state.V + linear_acc * deltaT, -V_max, V_max)
         for angular_acc in angular_acc_set:
             W_pred = np.clip(main_agent.state.W + angular_acc * deltaT, -W_max, W_max)
-            action_value = Predict_action_value(main_agent, Agent_Set, V_pred, W_pred, base_network)
+            action_value = Predict_action_value(session, main_agent, Agent_Set, V_pred, W_pred, base_network)
             if action_value > action_value_max:
                 action_value_max = action_value
                 action_pair = [V_pred, W_pred]                    
@@ -170,24 +172,32 @@ def Choose_action(session, main_agent, Agent_Set, base_network):
     return V_next, W_next
 
 def Agent_Set_Callback(data):
+    global Main_Agent, Agent_List
     agent_num = data['agent_num']
     main_agent_name = data['main_agent_name']
-    Agent_Set = []
+    Agent_List = []
     Agent_data = data['Agent_data']
     for agent_dict in Agent_data:
         agent = Agent.DicttoAgent(agent_dict)
-        Agent_Set.append(agent)
+        Agent_List.append(agent)
         if agent.name == main_agent_name:
-            main_agent = copy.deepcopy(agent)
-    if agent_num != len(Agent_Set):
+            Main_Agent = copy.deepcopy(agent)
+    if agent_num != len(Agent_List):
         print('robot num error!')
     else:
         Navigation_func()
         
-  
+def Navigation_func():
+    if len(Agent_List) == 2:
+        V_cmd, W_cmd = Choose_action(sess, Main_Agent, Agent_List, 2)
+    else:
+        V_cmd, W_cmd = Choose_action(sess, Main_Agent, Agent_List, 3)
+    print(V_cmd, W_cmd)
+    
+    
 
 if __name__ == '__main__':
     NOW =  datetime.datetime.now().strftime('%Y%m%d-%H%M%S')
-
+    Build_all_Network(sess, Network_Path_Dict)
 
     

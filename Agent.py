@@ -131,7 +131,7 @@ class Agent():
     def Transform_to_Dict(self):
         D = {}
         D['name'], D['Px'], D['Py'], D['Pth'], D['V'], D['W'], D['r'] = self.name, self.state.Px, self.state.Py, self.state.Pth, self.state.V, self.state.W, self.state.r
-        D['gx'], D['gy'], D['gth'],  D['rank'], D['mode'] = self.gx, self.gy, self.gth, self.mode
+        D['gx'], D['gy'], D['gth'],  D['rank'], D['mode'] = self.gx, self.gy, self.gth, self.rank, self.mode
         return D
 
 
