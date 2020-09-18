@@ -17,7 +17,8 @@ import Agent
 import numpy_Network as Network
 import Combination
 import Communication_func as Comm
-
+import time
+import threading
 
 color_list = ['b', 'g', 'r', 'c', 'm', 'y', 'k']
 
@@ -63,6 +64,7 @@ Network_Path_Dict = {'2':'Network/2_robot_network/gamma09_95_0429/two.json',
 
 Network_Dict = {}
 Main_Agent, Agent_List = [], []
+V_com, W_com, global_action_value = 0, 0, -99999
 
     
 def Build_network(robot_num, base_network_path):
@@ -140,21 +142,32 @@ def Predict_action_value(main_agent, Agent_Set, V_pred, W_pred, base_network):
                 
     return action_value
 
-def Choose_action_from_Network(main_agent, Agent_Set, base_network):
+def change_V_W_action(V, W, action_value):
+    global V_com, W_com, global_action_value
+    V_com, W_com, global_action_value = V, W, action_value
+    
+lock = threading.Lock()
+
+def Choose_action_from_Network(main_agent, Agent_Set, base_network, linear_acc_set, angular_acc_set):
     action_value_max = -999999   
-    linear_acc_set = np.arange(-linear_acc_max, linear_acc_max, 1)
-    angular_acc_set = np.arange(-angular_acc_max, angular_acc_max, 1)
     for linear_acc in linear_acc_set:
         V_pred = np.clip(main_agent.state.V + linear_acc * deltaT, -V_max, V_max)
         for angular_acc in angular_acc_set:
-            W_pred = np.clip(main_agent.state.W + angular_acc * deltaT, -W_max, W_max)
-            action_value = Predict_action_value(main_agent, Agent_Set, V_pred, W_pred, base_network)
+            W_pred = np.clip(main_agent.state.W + angular_acc * deltaT, -W_max, W_max)            
+            action_value = Predict_action_value(main_agent, Agent_Set, V_pred, W_pred, base_network)            
             if action_value > action_value_max:
                 action_value_max = action_value
                 action_pair = [V_pred, W_pred]                    
     V_pred = action_pair[0]
     W_pred = action_pair[1]
     #print(action_value_max)
+    if action_value_max > global_action_value:
+        lock.acquire()
+        try:
+            change_V_W_action(V_pred, W_pred, action_value_max)
+        finally:
+            lock.release()
+
     return V_pred, W_pred
 
 def Choose_action(main_agent, Agent_Set, base_network):
@@ -164,7 +177,17 @@ def Choose_action(main_agent, Agent_Set, base_network):
         V_next = main_agent.state.V + random.random() - 0.5
         W_next = main_agent.state.W + random.random() - 0.5
     if main_agent.mode == 'Greedy':
-        V_next, W_next = Choose_action_from_Network(main_agent, Agent_Set, base_network)
+        change_V_W_action(0,0,-99999)
+        t_list = []
+        linear_acc_set = np.arange(-linear_acc_max, linear_acc_max, 1)
+        angular_acc_set = np.arange(-angular_acc_max, angular_acc_max, 1)
+        for W in angular_acc_set:
+            t = threading.Thread(target=Choose_action_from_Network, args=(main_agent, Agent_Set, base_network, linear_acc_set, [W]))
+            t.start()
+            t_list.append(t)
+        for t in t_list:
+            t.join()
+        V_next, W_next = V_com, W_com
         
     return V_next, W_next
 
@@ -189,7 +212,8 @@ def Navigation_func():
         V_cmd, W_cmd = Choose_action(Main_Agent, Agent_List, 2)
     else:
         V_cmd, W_cmd = Choose_action(Main_Agent, Agent_List, 3)
-    print(V_cmd, W_cmd)
+    msg = {'header':'Message','V':V_cmd, 'W':W_cmd}
+    pub.publish_msg(json.dumps(msg))
     
     
 
@@ -202,5 +226,4 @@ if __name__ == '__main__':
     sub = Comm.Subscriber('127.0.0.1',12345, cb_func=Agent_Set_Callback)
     sub.connect()
     t = sub.background_callback()
-
     
