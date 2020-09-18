@@ -158,8 +158,8 @@ def Choose_action_from_Network(main_agent, Agent_Set, base_network, linear_acc_s
     V_pred = action_pair[0]
     W_pred = action_pair[1]
     #print(action_value_max)
-    if action_value_max > global_action_value:
-        print(action_value_max)
+    if action_value_max > global_action_value.value:
+        #print(action_value_max)
         lock.acquire()
         try:
             change_V_W_action(V_pred, W_pred, action_value_max, V_com, W_com, global_action_value)
@@ -176,13 +176,13 @@ def Choose_action(main_agent, Agent_Set, base_network):
         V_next = main_agent.state.V + random.random() - 0.5
         W_next = main_agent.state.W + random.random() - 0.5
     if main_agent.mode == 'Greedy':
-        change_V_W_action(0,0,-99999)
+        change_V_W_action(0,0,-99999, V_com, W_com, global_action_value)
         t_list = []
         linear_acc_set = np.arange(-linear_acc_max, linear_acc_max, 1)
         angular_acc_set = np.arange(-angular_acc_max, angular_acc_max, 1)
         s_angular_acc_set = np.array_split(angular_acc_set, 6)
         for W in s_angular_acc_set:
-            t = mp.Process(target=Choose_action_from_Network, args=(main_agent, Agent_Set, base_network, linear_acc_set, W, Network_Dict, V_com, W_com, global_action_value, V_com, W_com, global_action_value))
+            t = mp.Process(target=Choose_action_from_Network, args=(main_agent, Agent_Set, base_network, linear_acc_set, W, Network_Dict, V_com, W_com, global_action_value))
             t.start()
             t_list.append(t)
         for t in t_list:
@@ -212,7 +212,7 @@ def Navigation_func():
         V_cmd, W_cmd = Choose_action(Main_Agent, Agent_List, 2)
     else:
         V_cmd, W_cmd = Choose_action(Main_Agent, Agent_List, 3)
-    msg = {'header':'Message','V':V_cmd, 'W':W_cmd}
+    msg = {'header':'Message','V':V_cmd.value, 'W':W_cmd.value}
     pub.publish_msg(json.dumps(msg))
     
     
@@ -238,3 +238,5 @@ if __name__ == '__main__':
             for i in range(100):
                 Navigation_func()
         OP = input('Command: ')
+    pub.socket.close()
+    sub.socket.close()

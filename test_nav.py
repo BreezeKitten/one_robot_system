@@ -27,6 +27,25 @@ data['header'] = 'Message'
 jdata = json.dumps(data)
 
 
+data2 = {}
+data2['main_agent_name'] = 'A'
+data2['agent_num'] = 2
+data2['Agent_data'] = []
+data2['Agent_data'].append(A.Transform_to_Dict())
+data2['Agent_data'].append(B.Transform_to_Dict())
+data2['header'] = 'Message'
+jdata2 = json.dumps(data2)
+
+data3 = {}
+data3['main_agent_name'] = 'A'
+data3['agent_num'] = 3
+data3['Agent_data'] = []
+data3['Agent_data'].append(A.Transform_to_Dict())
+data3['Agent_data'].append(B.Transform_to_Dict())
+data3['Agent_data'].append(D.Transform_to_Dict())
+data3['header'] = 'Message'
+jdata3 = json.dumps(data3)
+
 def PD(data):
     print(data, time.time())
 
@@ -42,8 +61,15 @@ while(OP != 'Stop'):
         t = sub.background_callback()
     if OP == 'Pub':
         pub.publish_msg(jdata)
+    if OP == 'Pub2':
+        pub.publish_msg(jdata2)
+    if OP == 'Pub3':
+        pub.publish_msg(jdata3)
     if OP == 'contin':
         for i in range(100):
             pub.publish_msg(jdata)
             time.sleep(0.1)
     OP = input('Command: ')
+
+pub.socket.close()
+sub.socket.close()

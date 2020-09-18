@@ -91,14 +91,7 @@ class Publisher:
     
     def publish_msg(self, msg):
         self.socket.settimeout(3)
-        try:
-            self.c.send(Doki_msg.encode())
-            response = self.c.recv(1024)
-            if response == b'alive':
-                self.c.send(msg.encode())
-            else:
-                print('Doki response error')
-        except:
-            print('No Doki response')
-            self.socket.settimeout(None)
+        self.c.send(msg.encode())
+        self.socket.settimeout(None)
+
         
