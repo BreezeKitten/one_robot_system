@@ -52,7 +52,7 @@ two_robot_Network_Path = '2_robot_network/gamma09_95_0429/test.ckpt'
 '''
 Motion Parameter
 '''
-deltaT = 0.1            #unit:s
+deltaT = 0.2            #unit:s
 V_max = 3               #m/s
 W_max = 2               #rad/s
 linear_acc_max = 10     #m/s^2
@@ -62,7 +62,7 @@ x_upper_bound = 5       #unit:m
 x_lower_bound = -5      #unit:m
 y_upper_bound = 5       #unit:m
 y_lower_bound = -5      #unit:m
-TIME_OUT_FACTOR = 4
+TIME_OUT_FACTOR = 2
 
 
 RL_eposide_num = 100
@@ -204,10 +204,10 @@ def RL_process_all_Goal(robot_num, eposide_num, epsilon, RL_SAVE_PATH):
             
         data = {}
         data['header'] = 'Message'
-        data['agent_num'] = len(Agent_Set)
+        data['agent_num'] = robot_num
         data['Agent_data'] = []
         for agent in Agent_Set:
-            data['Agent_data'].append(agent.Transform_to_Dict())
+            #data['Agent_data'].append(agent.Transform_to_Dict())
             Command_dict[agent.name] = {'V':0, 'W':0}          
             
             
@@ -237,11 +237,16 @@ def RL_process_all_Goal(robot_num, eposide_num, epsilon, RL_SAVE_PATH):
                 if Check_Goal(agent1, Calculate_distance(resX, resY, 0, 0), resTH) and agent1.Goal_state == 'Not':
                     agent1.Goal_state = 'Finish'
 
+
+            data['Agent_data'] = []
+            for agent in Agent_Set:
+                data['Agent_data'].append(agent.Transform_to_Dict())
             
             for agent in Agent_Set:
                 data['main_agent_name'] = agent.name
-                pub.publish_msg(json.dumps(data).encode())
-                TT.sleep(0.1)
+                pub.publish_msg(json.dumps(data))
+                TT.sleep(0.2)
+
             
             terminal_flag = True
             for agent in Agent_Set:
@@ -277,6 +282,7 @@ def RL_process_all_Goal(robot_num, eposide_num, epsilon, RL_SAVE_PATH):
 
 def callback(data):
     global Command_dict
+    print(data)
     Command_dict[data['main_agent_name']]['V'], Command_dict[data['main_agent_name']]['W'] = data['V'], data['W']
 
 if __name__ == '__main__':
@@ -287,9 +293,6 @@ if __name__ == '__main__':
         Configfile = sys.argv[1]
     Config_dict = Load_Config(Configfile) 
    
-    
-    if int(Config_dict['main']['custom_parameter']):
-        Set_parameter(Config_dict['parameter'])
         
     pub = Comm.Publisher('127.0.0.1',12345)
     pub.set_pub()
@@ -303,7 +306,6 @@ if __name__ == '__main__':
             t = sub.background_callback()
         OP = input('Command: ')
           
-        
     
     if int(Config_dict['main']['all_goal']):
         print('All goal process')

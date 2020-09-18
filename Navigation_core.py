@@ -45,7 +45,7 @@ Collision_equ_penalty = -0.75
 '''
 Motion Parameter
 '''
-deltaT = 0.1            #unit:s
+deltaT = 0.2            #unit:s
 V_max = 3               #m/s
 W_max = 2               #rad/s
 linear_acc_max = 10     #m/s^2
@@ -237,6 +237,8 @@ if __name__ == '__main__':
         if OP == 'contin':
             for i in range(100):
                 Navigation_func()
+        if OP == 'Pub':
+            pub.publish_msg(json.dumps({'header':'Message'}))
         OP = input('Command: ')
     pub.socket.close()
     sub.socket.close()
