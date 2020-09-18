@@ -140,9 +140,8 @@ def Predict_action_value(main_agent, Agent_Set, V_pred, W_pred, base_network, Ne
                 
     return action_value
 
-def change_V_W_action(V, W, action_value):
-    global V_com, W_com, global_action_value
-    V_com, W_com, global_action_value = V, W, action_value
+def change_V_W_action(V, W, action_value, V_com, W_com, global_action_value):
+    V_com.value, W_com.value, global_action_value.value = V, W, action_value
     
 lock = mp.Lock()
 
@@ -163,7 +162,7 @@ def Choose_action_from_Network(main_agent, Agent_Set, base_network, linear_acc_s
         print(action_value_max)
         lock.acquire()
         try:
-            change_V_W_action(V_pred, W_pred, action_value_max)
+            change_V_W_action(V_pred, W_pred, action_value_max, V_com, W_com, global_action_value)
         finally:
             lock.release()
 
@@ -181,9 +180,9 @@ def Choose_action(main_agent, Agent_Set, base_network):
         t_list = []
         linear_acc_set = np.arange(-linear_acc_max, linear_acc_max, 1)
         angular_acc_set = np.arange(-angular_acc_max, angular_acc_max, 1)
-        s_angular_acc_set = np.array_split(angular_acc_set, 10)
+        s_angular_acc_set = np.array_split(angular_acc_set, 6)
         for W in s_angular_acc_set:
-            t = mp.Process(target=Choose_action_from_Network, args=(main_agent, Agent_Set, base_network, linear_acc_set, W, Network_Dict, V_com, W_com, global_action_value))
+            t = mp.Process(target=Choose_action_from_Network, args=(main_agent, Agent_Set, base_network, linear_acc_set, W, Network_Dict, V_com, W_com, global_action_value, V_com, W_com, global_action_value))
             t.start()
             t_list.append(t)
         for t in t_list:
@@ -222,7 +221,7 @@ if __name__ == '__main__':
     NOW =  datetime.datetime.now().strftime('%Y%m%d-%H%M%S')
     Network_Dict = {}
     Main_Agent, Agent_List = [], []
-    V_com, W_com, global_action_value = 0, 0, -99999
+    V_com, W_com, global_action_value = mp.Value('d', 0.0), mp.Value('d', 0.0), mp.Value('d', -999)
     Build_all_Network(Network_Path_Dict)
     pub = Comm.Publisher('127.0.0.1',12346)
     pub.set_pub()
