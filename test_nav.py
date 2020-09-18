@@ -33,7 +33,17 @@ def PD(data):
 pub = Comm.Publisher('127.0.0.1',12345)
 pub.set_pub()
 pub.wait_connect()
-sub = Comm.Subscriber('127.0.0.1',12346, cb_func=PD)
-sub.connect()
-t = sub.background_callback()
-    
+
+OP = input('Command: ')
+while(OP != 'Stop'):
+    if OP == 'Connect':
+        sub = Comm.Subscriber('127.0.0.1',12346, cb_func=PD)
+        sub.connect()
+        t = sub.background_callback()
+    if OP == 'Pub':
+        pub.publish_msg(jdata)
+    if OP == 'contin':
+        for i in range(100):
+            pub.publish_msg(jdata)
+            time.sleep(0.1)
+    OP = input('Command: ')

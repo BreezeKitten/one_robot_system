@@ -18,7 +18,7 @@ import numpy_Network as Network
 import Combination
 import Communication_func as Comm
 import time
-import threading
+import multiprocessing as mp
 
 color_list = ['b', 'g', 'r', 'c', 'm', 'y', 'k']
 
@@ -62,9 +62,7 @@ TIME_OUT_FACTOR = 4
 Network_Path_Dict = {'2':'Network/2_robot_network/gamma09_95_0429/two.json', 
                      '3':'Network/3_robot_network/0826_933/three.json'}
 
-Network_Dict = {}
-Main_Agent, Agent_List = [], []
-V_com, W_com, global_action_value = 0, 0, -99999
+
 
     
 def Build_network(robot_num, base_network_path):
@@ -95,7 +93,7 @@ def Check_Goal(agent, position_tolerance, orientation_tolerance):
     else:
         return False
 
-def Predict_action_value(main_agent, Agent_Set, V_pred, W_pred, base_network):
+def Predict_action_value(main_agent, Agent_Set, V_pred, W_pred, base_network, Network_Dict):
     Other_Set, Value_list = [], []
     network = Network_Dict[str(base_network)]
     
@@ -146,15 +144,15 @@ def change_V_W_action(V, W, action_value):
     global V_com, W_com, global_action_value
     V_com, W_com, global_action_value = V, W, action_value
     
-lock = threading.Lock()
+lock = mp.Lock()
 
-def Choose_action_from_Network(main_agent, Agent_Set, base_network, linear_acc_set, angular_acc_set):
+def Choose_action_from_Network(main_agent, Agent_Set, base_network, linear_acc_set, angular_acc_set, Network_Dict, V_com, W_com, global_action_value):
     action_value_max = -999999   
     for linear_acc in linear_acc_set:
         V_pred = np.clip(main_agent.state.V + linear_acc * deltaT, -V_max, V_max)
         for angular_acc in angular_acc_set:
             W_pred = np.clip(main_agent.state.W + angular_acc * deltaT, -W_max, W_max)            
-            action_value = Predict_action_value(main_agent, Agent_Set, V_pred, W_pred, base_network)            
+            action_value = Predict_action_value(main_agent, Agent_Set, V_pred, W_pred, base_network, Network_Dict)            
             if action_value > action_value_max:
                 action_value_max = action_value
                 action_pair = [V_pred, W_pred]                    
@@ -162,11 +160,13 @@ def Choose_action_from_Network(main_agent, Agent_Set, base_network, linear_acc_s
     W_pred = action_pair[1]
     #print(action_value_max)
     if action_value_max > global_action_value:
+        print(action_value_max)
         lock.acquire()
         try:
             change_V_W_action(V_pred, W_pred, action_value_max)
         finally:
             lock.release()
+
 
     return V_pred, W_pred
 
@@ -181,8 +181,9 @@ def Choose_action(main_agent, Agent_Set, base_network):
         t_list = []
         linear_acc_set = np.arange(-linear_acc_max, linear_acc_max, 1)
         angular_acc_set = np.arange(-angular_acc_max, angular_acc_max, 1)
-        for W in angular_acc_set:
-            t = threading.Thread(target=Choose_action_from_Network, args=(main_agent, Agent_Set, base_network, linear_acc_set, [W]))
+        s_angular_acc_set = np.array_split(angular_acc_set, 10)
+        for W in s_angular_acc_set:
+            t = mp.Process(target=Choose_action_from_Network, args=(main_agent, Agent_Set, base_network, linear_acc_set, W, Network_Dict, V_com, W_com, global_action_value))
             t.start()
             t_list.append(t)
         for t in t_list:
@@ -219,11 +220,21 @@ def Navigation_func():
 
 if __name__ == '__main__':
     NOW =  datetime.datetime.now().strftime('%Y%m%d-%H%M%S')
+    Network_Dict = {}
+    Main_Agent, Agent_List = [], []
+    V_com, W_com, global_action_value = 0, 0, -99999
     Build_all_Network(Network_Path_Dict)
     pub = Comm.Publisher('127.0.0.1',12346)
     pub.set_pub()
     pub.wait_connect()
-    sub = Comm.Subscriber('127.0.0.1',12345, cb_func=Agent_Set_Callback)
-    sub.connect()
-    t = sub.background_callback()
-    
+    OP = input('Command: ')
+    while(OP != 'Stop'):
+        if OP == 'Connect':
+            sub = Comm.Subscriber('127.0.0.1',12345, cb_func=Agent_Set_Callback)
+            sub.connect()
+            t = sub.background_callback()
+        if OP == 'Nav':
+            Navigation_func()
+        if OP == 'contin':
+            Navigation_func()
+        OP = input('Command: ')
