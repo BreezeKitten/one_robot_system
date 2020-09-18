@@ -212,7 +212,7 @@ def Navigation_func():
         V_cmd, W_cmd = Choose_action(Main_Agent, Agent_List, 2)
     else:
         V_cmd, W_cmd = Choose_action(Main_Agent, Agent_List, 3)
-    msg = {'header':'Message','V':V_cmd.value, 'W':W_cmd.value}
+    msg = {'header':'Message', 'main_agent_name':Main_Agent.name, 'V':V_cmd.value, 'W':W_cmd.value}
     pub.publish_msg(json.dumps(msg))
     
     
