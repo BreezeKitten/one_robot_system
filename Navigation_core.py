@@ -236,5 +236,6 @@ if __name__ == '__main__':
         if OP == 'Nav':
             Navigation_func()
         if OP == 'contin':
-            Navigation_func()
+            for i in range(100):
+                Navigation_func()
         OP = input('Command: ')
