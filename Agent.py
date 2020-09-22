@@ -116,6 +116,7 @@ class Agent():
         circle.append(plt.Circle( (item.Px, item.Py), item.r, color = color, fill = False))
         plt.text(item.Px-0.2, item.Py, str(i-1), bbox=dict(color=color, alpha=0.5))
         ax.add_artist(circle[-1])
+        return ax
         
     def Record_data(self, save_path):
         file_name = save_path + '/' + self.name + '.json'
