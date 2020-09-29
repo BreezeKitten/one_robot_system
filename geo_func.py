@@ -79,7 +79,7 @@ def New_robot_polygon(Main_State: Agent.State, Virtual_State: Agent.Observed_Sta
         LS = 0
     else:
         LS = d/VO_range/m.cos(theta)
-    LL = max(5,5*LS)
+    LL = max(3,3*LS)
     
     A = Point(PA.x + LS* u_L.x + Vx, PA.y + LS* u_L.y + Vy)
     B = Point(PA.x + LS* u_R.x + Vx, PA.y + LS* u_R.y + Vy)
@@ -135,6 +135,12 @@ def Build_test_map(map_num):
     elif map_num == 3:
         obs_list.append(Polygon([(-5,-5), (1,-5), (1,-1), (-5,-1)]))
         obs_list.append(Polygon([(-5,1), (5,1), (5,5), (-5,5)]))
+        obs_list.append(Polygon([(3,-5), (3,5), (5,5), (5,-5)]))
+        test_map = Generate_GeoDataFrame(obs_list)
+        return test_map
+    elif map_num == 4:
+        obs_list.append(Polygon([(-5,-5), (1,-5), (1,-0.8), (-5,-0.8)]))
+        obs_list.append(Polygon([(-5,0.8), (5,0.8), (5,5), (-5,5)]))
         obs_list.append(Polygon([(3,-5), (3,5), (5,5), (5,-5)]))
         test_map = Generate_GeoDataFrame(obs_list)
         return test_map

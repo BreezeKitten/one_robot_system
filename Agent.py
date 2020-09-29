@@ -107,14 +107,14 @@ class Agent():
                 plt.plot(item.Px, item.Py, color+'o')
                 plt.arrow(item.Px, item.Py, L*m.cos(item.Pth), L*m.sin(item.Pth))
                 circle.append(plt.Circle( (item.Px, item.Py), item.r, color = color, fill = False))
-                plt.text(item.Px-0.2, item.Py, str(i), bbox=dict(color=color, alpha=0.5))
+                #plt.text(item.Px-0.2, item.Py, str(i), bbox=dict(color=color, alpha=0.5))
                 ax.add_artist(circle[-1])
             i += 1
             last_item = item
         plt.plot(item.Px, item.Py, color+'o')
         plt.arrow(item.Px, item.Py, L*m.cos(item.Pth), L*m.sin(item.Pth))
         circle.append(plt.Circle( (item.Px, item.Py), item.r, color = color, fill = False))
-        plt.text(item.Px-0.2, item.Py, str(i-1), bbox=dict(color=color, alpha=0.5))
+        #plt.text(item.Px-0.2, item.Py, str(i-1), bbox=dict(color=color, alpha=0.5))
         ax.add_artist(circle[-1])
         return ax
         
@@ -148,6 +148,36 @@ def Correct_angle(angle):
     return angle
 
 
+def Dot(vector1, vector2):
+    return vector1[0]*vector2[0]+vector1[1]*vector2[1]
+
+def Norm2(vector):
+    return m.sqrt(Dot(vector,vector))
+
+def Tangent_angle_with_circle(point, radius):
+    return m.asin(radius/Norm2(point))
+
+
+def If_in_VO(main_state: State, other_state: Observed_State, time_factor=2):
+    relative_velocity = (other_state.Vx - main_state.V, other_state.Vy)
+    P = (-other_state.x, -other_state.y)
+    R = main_state.r + other_state.r
+    Relative_angle = m.acos(Dot(P, relative_velocity)/(Norm2(P)* Norm2(relative_velocity)))
+    if Norm2(P) <= R:
+        return True
+    else:
+        TAWC = Tangent_angle_with_circle(P, R)
+        if Relative_angle > TAWC:
+            return False
+        else:
+            if time_factor == 'INF':
+                return True
+            elif (Dot(P, P)/Dot(relative_velocity, P)) < time_factor:
+                return True
+            else:
+                return False
+    
+    
 
 def main_test():
     A = Agent('A',1,1,0,1,1,0.5,0,0,0,1)
