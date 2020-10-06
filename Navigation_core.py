@@ -251,5 +251,6 @@ if __name__ == '__main__':
         if OP == 'Pub':
             pub.publish_msg(json.dumps({'header':'Message'}))
         OP = input('Command: ')
-    pub.socket.close()
     sub.socket.close()
+    pub.socket.close()
+    

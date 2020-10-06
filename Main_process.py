@@ -5,38 +5,8 @@ Created on Fri Sep 25 10:52:14 2020
 @author: BreezeCat
 """
 
-IS_SIMULATION = True
+IS_ROS = True
 deltaT = 0.1
-
-import Agent
-import Navigation_core
-import geo_virtual_robot
-import matplotlib.pyplot as plt
-import datetime
-
-Map = geo_virtual_robot.TEST_Map
-real_Map = geo_virtual_robot.TEST_Map_real
-TEST_Agent = Agent.Agent('TEST', -3, 0, 0, 0, 0, 0.2, 2, -3, 6.28-1.57, 1, mode = 'Greedy')
-color_list = ['b', 'g', 'r', 'c', 'm', 'y', 'k']
-
-
-
-def Show_Path(Agent_Set, result, Map, FV, VVO, save_path):
-    plt.close('all')
-    plt.figure(figsize=(12,12))
-    ax = plt.subplot(111)
-    ax.cla()    
-    ax = VVO.plot(color='yellow',ax = FV.plot(color='red', ax = real_Map.plot(color='black', ax = Map.plot(color='gray', ax = ax))))
-    plt.xlabel('X(m)')
-    plt.ylabel('Y(m)')
-    color_count = 0
-    for agent in Agent_Set:
-        agent.Plot_Path(ax = ax, color = color_list[color_count%len(color_list)])
-        agent.Plot_goal(ax = ax, color = color_list[color_count%len(color_list)])
-        color_count += 1
-    NOW = datetime.datetime.now().strftime('%Y%m%d-%H%M%S')
-    plt.savefig(save_path +'/'+ NOW + result +'.png')
-    return
 
 def Saturation(V, W, Vmax, Wmax):
     Vsat, Wsat = V, W
@@ -53,39 +23,141 @@ def Saturation(V, W, Vmax, Wmax):
             Wsat = Wsat * Vmax/abs(Vsat)
             Vsat = Vmax * abs(Vsat)/Vsat
     return Vsat, Wsat
-    
 
-def Sim_Process(main_agent: Agent.Agent, save_path):
-    time = 0
-    while not Navigation_core.Check_Goal(main_agent, 0.2, 3.14/15):
-        Virtual_Agent, FV, VVO = geo_virtual_robot.Virtual_Agent_func(main_agent, 1, 1, Map)
-        while len(Virtual_Agent) < 1:
-            print('empty')
-            Virtual_Agent.append(Agent.Agent('empty',-5,-5,0,0,0,0.2,-5,-5,0,3,mode='Static'))
-            
-        All_Agent_list = [main_agent] + Virtual_Agent
-        #print(len(All_Agent_list))
-        Show_Path(All_Agent_list, str(round(time,1)), Map, FV, VVO, save_path)
-        V_net, W_net = Navigation_core.Choose_action(main_agent, All_Agent_list, min(len(All_Agent_list),3))
-        #print(V_net, W_net)
-        V_next, W_next = Saturation(V_net, W_net, 0.5, 1)
-        print('sat:', V_next, W_next)
+
+if not IS_ROS:
+    import Agent
+    import Navigation_core
+    import geo_virtual_robot
+    import matplotlib.pyplot as plt
+    import datetime
+    Map = geo_virtual_robot.TEST_Map
+    real_Map = geo_virtual_robot.TEST_Map_real
+    TEST_Agent = Agent.Agent('TEST', -3, 0, 0, 0, 0, 0.2, 2, -3, 6.28-1.57, 1, mode = 'Greedy')
+    color_list = ['b', 'g', 'r', 'c', 'm', 'y', 'k']
+
+
+    def Show_Path(Agent_Set, result, Map, FV, VVO, save_path):
+        plt.close('all')
+        plt.figure(figsize=(12,12))
+        ax = plt.subplot(111)
+        ax.cla()    
+        ax = VVO.plot(color='yellow',ax = FV.plot(color='red', ax = real_Map.plot(color='black', ax = Map.plot(color='gray', ax = ax))))
+        plt.xlabel('X(m)')
+        plt.ylabel('Y(m)')
+        color_count = 0
+        for agent in Agent_Set:
+            agent.Plot_Path(ax = ax, color = color_list[color_count%len(color_list)])
+            agent.Plot_goal(ax = ax, color = color_list[color_count%len(color_list)])
+            color_count += 1
+        NOW = datetime.datetime.now().strftime('%Y%m%d-%H%M%S')
+        plt.savefig(save_path +'/'+ NOW + result +'.png')
+        return
+   
+      
+    
+    def Sim_Process(main_agent: Agent.Agent, save_path):
+        time = 0
+        while not Navigation_core.Check_Goal(main_agent, 0.2, 3.14/15):
+            Virtual_Agent, FV, VVO = geo_virtual_robot.Virtual_Agent_func(main_agent, 1, 1, Map)
+            while len(Virtual_Agent) < 1:
+                print('empty')
+                Virtual_Agent.append(Agent.Agent('empty',-5,-5,0,0,0,0.2,-5,-5,0,3,mode='Static'))
+                
+            All_Agent_list = [main_agent] + Virtual_Agent
+            #print(len(All_Agent_list))
+            Show_Path(All_Agent_list, str(round(time,1)), Map, FV, VVO, save_path)
+            V_net, W_net = Navigation_core.Choose_action(main_agent, All_Agent_list, min(len(All_Agent_list),3))
+            #print(V_net, W_net)
+            V_next, W_next = Saturation(V_net, W_net, 0.5, 1)
+            print('sat:', V_next, W_next)
+            main_agent.Set_V_W(V_next, W_next)
+            main_agent.Update_state(dt=deltaT)
+            main_agent.Check_oscillation(5)
+            '''
+            for VR in geo_virtual_robot.Virtual_Agent_List:
+                VR.Set_V_W(V_next/3, 0)
+                VR.Update_state(dt=deltaT)
+            '''
+            time += deltaT      
+        V_next, W_next = 0, 0
         main_agent.Set_V_W(V_next, W_next)
-        main_agent.Update_state(dt=deltaT)
-        main_agent.Check_oscillation(5)
-        '''
-        for VR in geo_virtual_robot.Virtual_Agent_List:
-            VR.Set_V_W(V_next/3, 0)
-            VR.Update_state(dt=deltaT)
-        '''
-        time += deltaT      
-    V_next, W_next = 0, 0
-    main_agent.Set_V_W(V_next, W_next)
-    return
+        return
 
-def Process():
+
+else:
+    import Agent
+    import Communication_func as Comm
+    import copy
+    import json
+    import rospy
+    from geometry_msgs.msg import Twist
+    robot_cmd_vel = rospy.Publisher("/cmd_vel", Twist, queue_size=10)
+    Cmd_Vel = Twist()
+    Main_agent = Agent.Agent('robot1', 0, 0, 0, 0, 0, 0.2, 0, 0, 0, 1)
+    Other_agent_list = [Agent.Agent('test1', -3, 1, 0, 0, 0, 0.2, 0, 0, 0, 1), Agent.Agent('test2', -3, -1, 0, 0, 0, 0.2, 0, 0, 0, 1)]
     
-    return
+    def Command_CB(data):
+        V_cmd, W_cmd = Saturation(data['V'], data['W'], 0.5, 1)
+        Cmd_Vel.linear.x = V_cmd
+        Cmd_Vel.angular.z = W_cmd
+        robot_cmd_vel.publish(Cmd_Vel)
+        return
+        
+    def Pose_CB(data):
+        global Main_agent
+        Main_agent.state.Px, Main_agent.state.Py, Main_agent.state.Pth = data.linear.x, data.linear.y, data.angular.z
+        Main_agent.Path.append(copy.deepcopy(Main_agent.state))        
+        return        
+    
+    def Set_Main_Agent():
+        global Main_agent
+        Main_agent.state.Px = float(input('Px: '))
+        Main_agent.state.Py = float(input('Py: '))
+        Main_agent.state.Pth = float(input('Pth: '))
+        Main_agent.gx = float(input('gx: '))
+        Main_agent.gy = float(input('gy: '))
+        Main_agent.gth = float(input('gth: '))
+        Main_agent.rank = int(input('rank: '))
+
+    def Navi_process(Nav_pub):
+        data = {}
+        data['header'] = 'Message'
+        data['main_agent_name'] = Main_agent.name
+        data['agent_num'] = len(Other_agent_list) + 1
+        data['Agent_data'] = [Main_agent.Transform_to_Dict()]
+        for agent in Other_agent_list:
+            data['Agent_data'].append(agent.Transform_to_Dict())        
+        jdata = json.dumps(data)
+        Nav_pub.publish_msg(jdata)
+        return
+    
+    if __name__ == '__main__':
+        rospy.init_node('robot_path_pub',anonymous=True)
+        rate = rospy.Rate(10)
+        pose_sub = rospy.Subscriber("/robot_pose",Twist,Pose_CB)
+        
+        Set_Main_Agent()
+        
+        Nav_pub = Comm.Publisher('127.0.0.1',12345)
+        Nav_pub.set_pub()
+        Nav_pub.wait_connect()    
+        OP = input('Command: ')
+        while(OP != 'Continue'):
+            if OP == 'Connect':
+                sub = Comm.Subscriber('127.0.0.1',12346, cb_func=Command_CB)
+                sub.connect()
+                t = sub.background_callback()
+            OP = input('Command: ')
+        
+        while not rospy.is_shutdown():
+            Navi_process(Nav_pub)
+            rate.sleep()
+        
+        
+        sub.socket.close()
+        Nav_pub.socket.close()
+
 
 
         
