@@ -165,7 +165,7 @@ def Choose_action_from_Network(main_agent, Agent_Set, base_network):
                 action_pair = [V_pred, W_pred]                    
     V_pred = action_pair[0]
     W_pred = action_pair[1]
-    print(action_value_max)
+    #print(action_value_max)
     return V_pred, W_pred
 
 def Choose_action(main_agent, Agent_Set, base_network):
@@ -176,6 +176,8 @@ def Choose_action(main_agent, Agent_Set, base_network):
         W_next = main_agent.state.W + random.random() - 0.5
     if main_agent.mode == 'Greedy':
         V_next, W_next = Choose_action_from_Network(main_agent, Agent_Set, base_network)
+    if main_agent.mode == 'Oscillation':
+        V_next, W_next = 0, 0.5
         
     return V_next, W_next
 

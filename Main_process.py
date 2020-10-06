@@ -15,6 +15,7 @@ import matplotlib.pyplot as plt
 import datetime
 
 Map = geo_virtual_robot.TEST_Map
+real_Map = geo_virtual_robot.TEST_Map_real
 TEST_Agent = Agent.Agent('TEST', -3, 0, 0, 0, 0, 0.2, 2, -3, 6.28-1.57, 1, mode = 'Greedy')
 color_list = ['b', 'g', 'r', 'c', 'm', 'y', 'k']
 
@@ -25,7 +26,7 @@ def Show_Path(Agent_Set, result, Map, FV, VVO, save_path):
     plt.figure(figsize=(12,12))
     ax = plt.subplot(111)
     ax.cla()    
-    ax = VVO.plot(color='yellow',ax = FV.plot(color='red', ax = Map.plot(color='black', ax = ax)))
+    ax = VVO.plot(color='yellow',ax = FV.plot(color='red', ax = real_Map.plot(color='black', ax = Map.plot(color='gray', ax = ax))))
     plt.xlabel('X(m)')
     plt.ylabel('Y(m)')
     color_count = 0
@@ -58,23 +59,23 @@ def Sim_Process(main_agent: Agent.Agent, save_path):
     time = 0
     while not Navigation_core.Check_Goal(main_agent, 0.2, 3.14/15):
         Virtual_Agent, FV, VVO = geo_virtual_robot.Virtual_Agent_func(main_agent, 1, 1, Map)
-        if len(Virtual_Agent) < 2:
+        while len(Virtual_Agent) < 1:
             print('empty')
             Virtual_Agent.append(Agent.Agent('empty',-5,-5,0,0,0,0.2,-5,-5,0,3,mode='Static'))
-            #Virtual_Agent.append(Agent.Agent('empty',1,-1,3.14,0,0,0.5,1,-1,3.14,3,mode='Static'))
-            Virtual_Agent.append(Agent.Agent('empty',-5,-5,0,0,0,0.2,-5,-5,0,3,mode='Static'))
+            
         All_Agent_list = [main_agent] + Virtual_Agent
-        print(len(All_Agent_list))
-        Show_Path(All_Agent_list, str(time), Map, FV, VVO, save_path)
-        V_net, W_net = Navigation_core.Choose_action(main_agent, All_Agent_list, 3)
-        print(V_net, W_net)
+        #print(len(All_Agent_list))
+        Show_Path(All_Agent_list, str(round(time,1)), Map, FV, VVO, save_path)
+        V_net, W_net = Navigation_core.Choose_action(main_agent, All_Agent_list, min(len(All_Agent_list),3))
+        #print(V_net, W_net)
         V_next, W_next = Saturation(V_net, W_net, 0.5, 1)
         print('sat:', V_next, W_next)
         main_agent.Set_V_W(V_next, W_next)
         main_agent.Update_state(dt=deltaT)
+        main_agent.Check_oscillation(5)
         '''
         for VR in geo_virtual_robot.Virtual_Agent_List:
-            VR.Set_V_W(V_next/1.5, 0)
+            VR.Set_V_W(V_next/3, 0)
             VR.Update_state(dt=deltaT)
         '''
         time += deltaT      
@@ -82,7 +83,9 @@ def Sim_Process(main_agent: Agent.Agent, save_path):
     main_agent.Set_V_W(V_next, W_next)
     return
 
-
+def Process():
+    
+    return
 
 
         
