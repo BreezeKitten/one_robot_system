@@ -193,7 +193,7 @@ def Tangent_angle_with_circle(point, radius):
     return m.asin(radius/Norm2(point))
 
 
-def If_in_VO(main_state: State, other_state: Observed_State, time_factor=2):
+def If_in_VO(main_state, other_state, time_factor=2):
     relative_velocity = (other_state.Vx - main_state.V, other_state.Vy)
     P = (-other_state.x, -other_state.y)
     R = main_state.r + other_state.r
