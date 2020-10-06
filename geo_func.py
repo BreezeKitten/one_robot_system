@@ -97,8 +97,10 @@ def Build_velocity_poly(Robot: Agent.State, dV, Wmax, approximation_method = 'Tr
     Vc = Point(P.x+V*m.cos(theta), P.y+V*m.sin(theta))
     if V == 0:
         Vv = Vector((V+dV)*m.cos(theta), (V+dV)*m.sin(theta))
-    else:
+    elif V > 0:
         Vv = Vector(V*m.cos(theta), V*m.sin(theta))
+    else:
+        Vv = Vector(V*m.cos(theta+m.pi), V*m.sin(theta+m.pi))
     Vo = Rotate_vector(Vv, m.pi/2)    
     # Square approximaion   
     if approximation_method == 'Squ':      
@@ -112,11 +114,17 @@ def Build_velocity_poly(Robot: Agent.State, dV, Wmax, approximation_method = 'Tr
         A = Point(Vv.x*(V+dV)/Vv.length + Vo.x*(V+dV)*Wmax/Vo.length + P.x, Vv.y*(V+dV)/Vv.length + Vo.y*(V+dV)*Wmax/Vo.length + P.y)
         B = Point(Vv.x*(V-dV)/Vv.length + Vo.x*(V-dV)*Wmax/Vo.length + P.x, Vv.y*(V-dV)/Vv.length + Vo.y*(V-dV)*Wmax/Vo.length + P.y)
         C = Point(Vv.x*(V-dV)/Vv.length - Vo.x*(V-dV)*Wmax/Vo.length + P.x, Vv.y*(V-dV)/Vv.length - Vo.y*(V-dV)*Wmax/Vo.length + P.y)
-        D = Point(Vv.x*(V+dV)/Vv.length - Vo.x*(V+dV)*Wmax/Vo.length + P.x, Vv.y*(V+dV)/Vv.length - Vo.y*(V+dV)*Wmax/Vo.length + P.y)    
-        if V*(V-dV) > 0 :#or V*(V+dV) < 0:
-            poly_list = [Polygon([A.List(), B.List(), C.List(), D.List()])]
+        D = Point(Vv.x*(V+dV)/Vv.length - Vo.x*(V+dV)*Wmax/Vo.length + P.x, Vv.y*(V+dV)/Vv.length - Vo.y*(V+dV)*Wmax/Vo.length + P.y)
+        if V >= 0:
+            if V*(V-dV) > 0 :#or V*(V+dV) < 0:
+                poly_list = [Polygon([A.List(), B.List(), C.List(), D.List()])]
+            else:
+                poly_list = [Polygon([A.List(), P.List(), D.List()]), Polygon([P.List(), B.List(), C.List()])]
         else:
-            poly_list = [Polygon([A.List(), P.List(), D.List()]), Polygon([P.List(), B.List(), C.List()])]    
+            if V*(V+dV) > 0:
+                poly_list = [Polygon([A.List(), D.List(), C.List(), B.List()])]
+            else:
+                poly_list = [Polygon([A.List(), D.List(), P.List()]), Polygon([P.List(), C.List(), B.List()])]            
     Vel_df = Generate_GeoDataFrame(poly_list)
     return Vel_df
 
@@ -128,9 +136,10 @@ def Build_test_map(map_num):
         test_map = Generate_GeoDataFrame(obs_list)
         return test_map
     elif map_num == 2:
-        obs_list.append(Polygon([(-5,-5), (0,-5), (0,-1), (-5,-1)]))
-        obs_list.append(Polygon([(-5,1), (5,1), (5,5), (-5,5)]))
-        test_map = Generate_GeoDataFrame(obs_list)    
+        obs_list.append(Polygon([(-5,-5), (0.8,-5), (0.8,-1.2), (-5,-1.2)]))
+        obs_list.append(Polygon([(-5,1.2), (5,1.2), (5,5), (-5,5)]))
+        obs_list.append(Polygon([(3.2,-5), (3.2,5), (5,5), (5,-5)]))
+        test_map = Generate_GeoDataFrame(obs_list)   
         return test_map
     elif map_num == 3:
         obs_list.append(Polygon([(-5,-5), (1,-5), (1,-1), (-5,-1)]))
@@ -139,8 +148,14 @@ def Build_test_map(map_num):
         test_map = Generate_GeoDataFrame(obs_list)
         return test_map
     elif map_num == 4:
-        obs_list.append(Polygon([(-5,-5), (1,-5), (1,-0.8), (-5,-0.8)]))
+        obs_list.append(Polygon([(-5,-5), (1.2,-5), (1.2,-0.8), (-5,-0.8)]))
         obs_list.append(Polygon([(-5,0.8), (5,0.8), (5,5), (-5,5)]))
+        obs_list.append(Polygon([(2.8,-5), (2.8,5), (5,5), (5,-5)]))
+        test_map = Generate_GeoDataFrame(obs_list)
+        return test_map
+    elif map_num == 5:
+        obs_list.append(Polygon([(-5,-5), (1,-5), (1,-0.9), (-5,-0.9)]))
+        obs_list.append(Polygon([(-5,0.9), (5,0.9), (5,5), (-5,5)]))
         obs_list.append(Polygon([(3,-5), (3,5), (5,5), (5,-5)]))
         test_map = Generate_GeoDataFrame(obs_list)
         return test_map
