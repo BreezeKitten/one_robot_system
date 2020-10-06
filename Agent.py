@@ -40,12 +40,15 @@ class Observed_State():
         return [self.x, self.y, self.Vx, self.Vy, self.r]
 
 class Agent():
-    def __init__(self, name, Px, Py, Pth, V, W, r, gx, gy, gth, rank, mode = 'Greedy'):
+    def __init__(self, name, Px, Py, Pth, V, W, r, gx, gy, gth, rank, mode = 'Greedy', nonholonomic = True):
         self.name = name
         self.state = State(Px, Py, Pth, V, W, r)
         self.gx, self.gy, self.gth, self.rank, self.mode = gx, gy, gth, rank, mode
         self.Path = [copy.deepcopy(self.state)]
         self.Goal_state = 'Not'
+        self.oscill_count = 0
+        self.oscill_time = 0
+        self.nonholonomic = nonholonomic
         
     def Update_state(self, dt = 0.1):
         TH = Correct_angle(self.state.Pth +  self.state.W * dt)
@@ -87,14 +90,16 @@ class Agent():
     def Plot_state(self, ax, color = 'b'):
         L = 0.5
         plt.plot(self.state.Px, self.state.Py, color+'o')
-        plt.arrow(self.state.Px, self.state.Py, L*m.cos(self.state.Pth), L*m.sin(self.state.Pth))
+        if self.nonholonomic:
+            plt.arrow(self.state.Px, self.state.Py, L*m.cos(self.state.Pth), L*m.sin(self.state.Pth))
         circle1 = plt.Circle( (self.state.Px, self.state.Py), self.state.r, color = color, fill = False)
         ax.add_artist(circle1)
     
     def Plot_goal(self, ax ,color = 'b'):
         L = 0.5
         plt.plot(self.gx, self.gy, color+'o')
-        plt.arrow(self.gx, self.gy, L*m.cos(self.gth), L*m.sin(self.gth))
+        if self.nonholonomic:
+            plt.arrow(self.gx, self.gy, L*m.cos(self.gth), L*m.sin(self.gth))
     
     def Plot_Path(self, ax, color = 'b'):
         L = 0.5       
@@ -105,17 +110,20 @@ class Agent():
             plt.plot([last_item.Px, item.Px], [last_item.Py, item.Py], color+'-')
             if i%10 == 0:
                 plt.plot(item.Px, item.Py, color+'o')
-                plt.arrow(item.Px, item.Py, L*m.cos(item.Pth), L*m.sin(item.Pth))
+                if self.nonholonomic:
+                    plt.arrow(item.Px, item.Py, L*m.cos(item.Pth), L*m.sin(item.Pth))
                 circle.append(plt.Circle( (item.Px, item.Py), item.r, color = color, fill = False))
-                plt.text(item.Px-0.2, item.Py, str(i), bbox=dict(color=color, alpha=0.5))
+                #plt.text(item.Px-0.2, item.Py, str(i), bbox=dict(color=color, alpha=0.5))
                 ax.add_artist(circle[-1])
             i += 1
             last_item = item
         plt.plot(item.Px, item.Py, color+'o')
-        plt.arrow(item.Px, item.Py, L*m.cos(item.Pth), L*m.sin(item.Pth))
+        if self.nonholonomic:
+            plt.arrow(item.Px, item.Py, L*m.cos(item.Pth), L*m.sin(item.Pth))
         circle.append(plt.Circle( (item.Px, item.Py), item.r, color = color, fill = False))
-        plt.text(item.Px-0.2, item.Py, str(i-1), bbox=dict(color=color, alpha=0.5))
+        #plt.text(item.Px-0.2, item.Py, str(i-1), bbox=dict(color=color, alpha=0.5))
         ax.add_artist(circle[-1])
+        return ax
         
     def Record_data(self, save_path):
         file_name = save_path + '/' + self.name + '.json'
@@ -133,6 +141,34 @@ class Agent():
         D['name'], D['Px'], D['Py'], D['Pth'], D['V'], D['W'], D['r'] = self.name, self.state.Px, self.state.Py, self.state.Pth, self.state.V, self.state.W, self.state.r
         D['gx'], D['gy'], D['gth'],  D['rank'], D['mode'] = self.gx, self.gy, self.gth, self.rank, self.mode
         return D
+    
+    def Check_oscillation(self, check_step):
+        if self.oscill_count > 0:
+            if self.oscill_count <= 2:
+                self.mode = 'Greedy'
+            self.oscill_count -= 1
+            return
+        if len(self.Path) < check_step:
+            print('Not move enough step')
+            return
+        else:
+            Pose_now = (self.Path[-1].Px, self.Path[-1].Py, self.Path[-1].Pth)
+            Pose_check = (self.Path[-check_step].Px, self.Path[-check_step].Py, self.Path[-check_step].Pth)
+            #Pose_check_p1 = (self.Path[-check_step+1].Px, self.Path[-check_step+1].Py, self.Path[-check_step+1].Pth)
+            if abs(Pose_now[0] - Pose_check[0]) < 0.04 and abs(Pose_now[1] - Pose_check[1]) < 0.04  and abs(Pose_now[2] - Pose_check[2]) < 0.05:
+                print('oscillation')
+                self.mode = 'Oscillation'
+                self.oscill_count = 5
+                self.oscill_time += 1
+                return
+            #elif abs(Pose_now[0] - Pose_check_p1[0]) < 0.04 and abs(Pose_now[1] - Pose_check_p1[1]) < 0.04  and abs(Pose_now[2] - Pose_check_p1[2]) < 0.05:
+            #    print('oscillation')
+            #    self.mode = 'Oscillation'
+            #    return
+            else:
+                self.mode = 'Greedy'
+                return
+            
 
 
 def DicttoAgent(agent_dict):
@@ -147,6 +183,38 @@ def Correct_angle(angle):
     return angle
 
 
+def Dot(vector1, vector2):
+    return vector1[0]*vector2[0]+vector1[1]*vector2[1]
+
+def Norm2(vector):
+    return m.sqrt(Dot(vector,vector))
+
+def Tangent_angle_with_circle(point, radius):
+    return m.asin(radius/Norm2(point))
+
+
+def If_in_VO(main_state: State, other_state: Observed_State, time_factor=2):
+    relative_velocity = (other_state.Vx - main_state.V, other_state.Vy)
+    P = (-other_state.x, -other_state.y)
+    R = main_state.r + other_state.r
+    if Norm2(relative_velocity) == 0:
+        return False
+    Relative_angle = m.acos(Dot(P, relative_velocity)/(Norm2(P)* Norm2(relative_velocity)))
+    if Norm2(P) <= R:
+        return True
+    else:
+        TAWC = Tangent_angle_with_circle(P, R)
+        if Relative_angle > TAWC:
+            return False
+        else:
+            if time_factor == 'INF':
+                return True
+            elif (Dot(P, P)/Dot(relative_velocity, P)) < time_factor:
+                return True
+            else:
+                return False
+    
+    
 
 def main_test():
     A = Agent('A',1,1,0,1,1,0.5,0,0,0,1)
