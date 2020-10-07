@@ -146,6 +146,16 @@ else:
         Nav_pub.publish_msg(jdata)
         return
     
+    def Other_Set_Callback(data):
+        global Other_agent_list
+        Other_agent_list = []
+        Agent_data = data['Agent_data']
+        for agent_dict in Agent_data:
+            agent = Agent.DicttoAgent(agent_dict)
+            if agent.name != Main_name:
+                Other_agent_list.append(agent)
+
+    
     if __name__ == '__main__':
         rospy.init_node('navi_node_'+Main_name,anonymous=True)
         rate = rospy.Rate(10)
@@ -162,6 +172,10 @@ else:
                 sub = Comm.Subscriber('127.0.0.1',12346, cb_func=Command_CB)
                 sub.connect()
                 t = sub.background_callback()
+            if OP == 'Connect2':
+                sub2 = Comm.Subscriber('192.168.0.134',12340+int(Main_name[-1]), cb_func=Other_Set_Callback)
+                sub2.connect()
+                t2 = sub2.background_callback()
             OP = input('Command: ')
         
         while not rospy.is_shutdown():

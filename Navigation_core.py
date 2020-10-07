@@ -199,9 +199,7 @@ def Choose_action(main_agent, Agent_Set, base_network):
         for t in t_list:
             t.join()
         V_next, W_next = V_com, W_com
-    if main_agent.mode == 'Finish':
-        V_next, W_next = 0, 0
-        
+
     return V_next, W_next
 
 def Agent_Set_Callback(data):
