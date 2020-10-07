@@ -93,7 +93,7 @@ def Check_Goal(agent, position_tolerance, orientation_tolerance):
     else:
         return False
 
-def Predict_action_value(main_agent, Agent_Set, V_pred, W_pred, base_network):
+def Predict_action_value(main_agent, Agent_Set, V_pred, W_pred, base_network, Network_Dict):
     Other_Set, Value_list = [], []
     network = Network_Dict[str(base_network)]
     VO_flag = False

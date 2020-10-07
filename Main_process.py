@@ -56,7 +56,7 @@ if not IS_ROS:
    
       
     
-    def Sim_Process(main_agent: Agent.Agent, save_path):
+    def Sim_Process(main_agent, save_path):
         time = 0
         while not Navigation_core.Check_Goal(main_agent, 0.2, 3.14/15):
             Virtual_Agent, FV, VVO = geo_virtual_robot.Virtual_Agent_func(main_agent, 1, 1, Map)
@@ -92,7 +92,7 @@ else:
     import json
     import rospy
     from geometry_msgs.msg import Twist
-    robot_cmd_vel = rospy.Publisher("/cmd_vel", Twist, queue_size=10)
+    robot_cmd_vel = rospy.Publisher("/robot1/cmd_vel", Twist, queue_size=10)
     Cmd_Vel = Twist()
     Main_agent = Agent.Agent('robot1', 0, 0, 0, 0, 0, 0.2, 0, 0, 0, 1)
     Other_agent_list = [Agent.Agent('test1', -3, 1, 0, 0, 0, 0.2, 0, 0, 0, 1), Agent.Agent('test2', -3, -1, 0, 0, 0, 0.2, 0, 0, 0, 1)]
@@ -133,9 +133,9 @@ else:
         return
     
     if __name__ == '__main__':
-        rospy.init_node('robot_path_pub',anonymous=True)
+        rospy.init_node('navi_node',anonymous=True)
         rate = rospy.Rate(10)
-        pose_sub = rospy.Subscriber("/robot_pose",Twist,Pose_CB)
+        pose_sub = rospy.Subscriber("/robot1/robot_pose",Twist,Pose_CB)
         
         Set_Main_Agent()
         
