@@ -60,9 +60,16 @@ agent2_pub.wait_connect()
 
 agent3_pub = Comm.Publisher('192.168.0.134',12343)
 agent3_pub.set_pub()
-agent3_pub.wait_connect() 
+agent3_pub.wait_connect()
+
+OP = input('command:')
+while(OP != 'Start'):
+    OP = input('command:')
 
 while not rospy.is_shutdown():
     Pub_process([agent1_pub, agent2_pub, agent3_pub])
     rate.sleep()
 
+agent1_pub.socket.close()
+agent2_pub.socket.close()
+agent3_pub.socket.close()
