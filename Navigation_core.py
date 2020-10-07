@@ -45,9 +45,9 @@ Collision_equ_penalty = -0.75
 '''
 Motion Parameter
 '''
-deltaT = 0.2            #unit:s
+deltaT = 0.1            #unit:s
 V_max = 3               #m/s
-W_max = 2               #rad/s
+W_max = 1#2               #rad/s
 linear_acc_max = 10     #m/s^2
 angular_acc_max = 7     #rad/s^2
 size_min = 0.1          #unit:m
@@ -223,6 +223,9 @@ def Navigation_func():
         V_cmd, W_cmd = Choose_action(Main_Agent, Agent_List, 2)
     else:
         V_cmd, W_cmd = Choose_action(Main_Agent, Agent_List, 3)
+    if Check_Goal(Main_Agent, Calculate_distance(resX, resY, 0, 0), resTH):
+        print('Arrived!')
+        V_cmd, W_cmd = 0, 0
     msg = {'header':'Message', 'main_agent_name':Main_Agent.name, 'V':V_cmd.value, 'W':W_cmd.value}
     pub.publish_msg(json.dumps(msg))
     

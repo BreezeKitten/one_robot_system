@@ -86,15 +86,17 @@ if not IS_ROS:
 
 
 else:
+    Main_name = input('name: ')    
+    
     import Agent
     import Communication_func as Comm
     import copy
     import json
     import rospy
     from geometry_msgs.msg import Twist
-    robot_cmd_vel = rospy.Publisher("/robot1/cmd_vel", Twist, queue_size=10)
+    robot_cmd_vel = rospy.Publisher("/"+Main_name+"/cmd_vel", Twist, queue_size=10)
     Cmd_Vel = Twist()
-    Main_agent = Agent.Agent('robot1', 0, 0, 0, 0, 0, 0.2, 0, 0, 0, 1)
+    Main_agent = Agent.Agent(Main_name, 0, 0, 0, 0, 0, 0.2, 0, 0, 0, 1)
     Other_agent_list = [Agent.Agent('test1', -3, 1, 0, 0, 0, 0.2, 0, 0, 0, 1), Agent.Agent('test2', -3, -1, 0, 0, 0, 0.2, 0, 0, 0, 1)]
     
     def Command_CB(data):
@@ -133,9 +135,9 @@ else:
         return
     
     if __name__ == '__main__':
-        rospy.init_node('navi_node',anonymous=True)
+        rospy.init_node('navi_node_'+Main_name,anonymous=True)
         rate = rospy.Rate(10)
-        pose_sub = rospy.Subscriber("/robot1/robot_pose",Twist,Pose_CB)
+        pose_sub = rospy.Subscriber("/"+Main_name+"/robot_pose",Twist,Pose_CB)
         
         Set_Main_Agent()
         
