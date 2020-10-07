@@ -168,7 +168,8 @@ else:
             if Check_Goal(Main_agent, Calculate_distance(0.1, 0.1, 0, 0), math.pi/15):
                 print('Arrived!')
                 Command_CB({'V':0, 'W':0})
-            Navi_process(Nav_pub)
+            else:
+                Navi_process(Nav_pub)
             rate.sleep()
         
         
