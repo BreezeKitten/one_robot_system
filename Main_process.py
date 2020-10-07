@@ -7,6 +7,7 @@ Created on Fri Sep 25 10:52:14 2020
 
 IS_ROS = True
 deltaT = 0.1
+import math
 
 def Saturation(V, W, Vmax, Wmax):
     Vsat, Wsat = V, W
@@ -23,6 +24,17 @@ def Saturation(V, W, Vmax, Wmax):
             Wsat = Wsat * Vmax/abs(Vsat)
             Vsat = Vmax * abs(Vsat)/Vsat
     return Vsat, Wsat
+
+def Calculate_distance(x1, y1, x2, y2):
+    return math.sqrt(math.pow( (x1-x2) , 2) + math.pow( (y1-y2) , 2))
+
+def Check_Goal(agent, position_tolerance, orientation_tolerance):    
+    position_error = Calculate_distance(agent.state.Px, agent.state.Py, agent.gx, agent.gy)
+    orientation_error = abs(agent.state.Pth - agent.gth)
+    if (position_error < position_tolerance) and (orientation_error < orientation_tolerance):
+        return True
+    else:
+        return False
 
 
 if not IS_ROS:
@@ -153,6 +165,9 @@ else:
             OP = input('Command: ')
         
         while not rospy.is_shutdown():
+            if Check_Goal(Main_agent, Calculate_distance(0.1, 0.1, 0, 0), math.pi/15):
+                print('Arrived!')
+                Main_agent.mode = 'Finish'
             Navi_process(Nav_pub)
             rate.sleep()
         
