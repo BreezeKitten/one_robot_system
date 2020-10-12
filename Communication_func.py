@@ -83,7 +83,7 @@ class Publisher:
     def accept_connect(self):
         self.c, self.addr = self.socket.accept()     # 建立客户端连接
         print('连接地址：', self.addr)
-        self.receive_msg(self)
+        self.receive_msg()
         return        
         
     def wait_connect(self):
