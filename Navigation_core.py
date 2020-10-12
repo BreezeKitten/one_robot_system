@@ -234,15 +234,11 @@ if __name__ == '__main__':
     Main_Agent, Agent_List = [], []
     V_com, W_com, global_action_value = mp.Value('d', 0.0), mp.Value('d', 0.0), mp.Value('d', -999)
     Build_all_Network(Network_Path_Dict)
-    pub = Comm.Publisher('127.0.0.1',12346)
+    pub = Comm.Publisher('127.0.0.1',12346,cb_func=Agent_Set_Callback)
     pub.set_pub()
     pub.wait_connect()
     OP = input('Command: ')
     while(OP != 'Stop'):
-        if OP == 'Connect':
-            sub = Comm.Subscriber('127.0.0.1',12345, cb_func=Agent_Set_Callback)
-            sub.connect()
-            t = sub.background_callback()
         if OP == 'Nav':
             Navigation_func()
         if OP == 'contin':
@@ -251,6 +247,5 @@ if __name__ == '__main__':
         if OP == 'Pub':
             pub.publish_msg(json.dumps({'header':'Message'}))
         OP = input('Command: ')
-    sub.socket.close()
     pub.socket.close()
     

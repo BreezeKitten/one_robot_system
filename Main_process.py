@@ -106,6 +106,8 @@ else:
     import json
     import rospy
     from geometry_msgs.msg import Twist
+    from std_msgs.msg import Bool
+    start_flag = False
     robot_cmd_vel = rospy.Publisher("/"+Main_name+"/cmd_vel", Twist, queue_size=10)
     Cmd_Vel = Twist()
     Main_agent = Agent.Agent(Main_name, 0, 0, 0, 0, 0, 0.2, 0, 0, 0, 1)
@@ -134,7 +136,7 @@ else:
         Main_agent.gth = float(input('gth: '))
         Main_agent.rank = int(input('rank: '))
 
-    def Navi_process(Nav_pub):
+    def Navi_process(Nav_sub):
         data = {}
         data['header'] = 'Message'
         data['main_agent_name'] = Main_agent.name
@@ -143,7 +145,9 @@ else:
         for agent in Other_agent_list:
             data['Agent_data'].append(agent.Transform_to_Dict())        
         jdata = json.dumps(data)
-        Nav_pub.publish_msg(jdata)
+        Nav_sub.socket.settimeout(3)
+        Nav_sub.socket.send(jdata.encode())
+        Nav_sub.socket.settimeout(None)
         return
     
     def Other_Set_Callback(data):
@@ -154,18 +158,24 @@ else:
             agent = Agent.DicttoAgent(agent_dict)
             if agent.name != Main_name:
                 Other_agent_list.append(agent)
+                
+    def Flag_CB(data):
+        global start_flag 
+        start_flag = data
+        if start_flag:
+            print('mission start!')
+        else:
+            print('mission pause!')
 
     
     if __name__ == '__main__':
         rospy.init_node('navi_node_'+Main_name,anonymous=True)
         rate = rospy.Rate(10)
         pose_sub = rospy.Subscriber("/"+Main_name+"/robot_pose",Twist,Pose_CB)
-        
+        flag_sub = rospy.Subscriber("/start_flag",Bool,Flag_CB)
+                
         Set_Main_Agent()
-        
-        Nav_pub = Comm.Publisher('127.0.0.1',12345)
-        Nav_pub.set_pub()
-        Nav_pub.wait_connect()    
+
         OP = input('Command: ')
         while(OP != 'Continue'):
             if OP == 'Connect':
@@ -179,16 +189,17 @@ else:
             OP = input('Command: ')
         
         while not rospy.is_shutdown():
-            if Check_Goal(Main_agent, Calculate_distance(0.1, 0.1, 0, 0), math.pi/15):
-                print('Arrived!')
-                Command_CB({'V':0, 'W':0})
-            else:
-                Navi_process(Nav_pub)
+            if start_flag:
+                if Check_Goal(Main_agent, Calculate_distance(0.1, 0.1, 0, 0), math.pi/15):
+                    print('Arrived!')
+                    Command_CB({'V':0, 'W':0})
+                else:
+                    Navi_process(sub)
             rate.sleep()
         
         
         sub.socket.close()
-        Nav_pub.socket.close()
+
 
 
 
