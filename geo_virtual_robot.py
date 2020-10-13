@@ -90,51 +90,78 @@ def Adjust_Old_New_VA(main_agent: Agent.Agent, Old_List: [Agent.Agent]):
         return        
             
 
-def Find_Virtual_Agent(main_agent: Agent.Agent, FV):
+def Find_Virtual_Agent(main_agent: Agent.Agent, FV, mode='Position'):
     global Virtual_Agent_List
-    Old_VA_List = copy.deepcopy(Virtual_Agent_List)
-    Virtual_Agent_List = []
-    
-
-    if Virtual_Agent_List == []:
-        for i in FV.index:
-            bound = FV.geometry[i].bounds
-            x_bound, y_bound = Find_bound(main_agent.state.Px, main_agent.state.Py, bound)
-            sFV = gef.Generate_GeoDataFrame([FV.geometry[i]])
-            sV = General_virtual_agent('FV'+str(i), x_bound, y_bound)
-            sVVO_df = gef.Generate_GeoDataFrame([gef.New_robot_polygon(main_agent.state, sV.Relative_observed_state(0,0,0), VO_range)])
-            sdiff = gef.Set_difference(sFV, sVVO_df)  
-            Del_small_area(sdiff)
-            time = 0
-            while(len(sdiff.is_empty) != 0 and time < 3):
+    if mode == 'Position':
+        Old_VA_List = copy.deepcopy(Virtual_Agent_List)
+        Virtual_Agent_List = []   
+        if Virtual_Agent_List == []:
+            for i in FV.index:
+                bound = FV.geometry[i].bounds
+                x_bound, y_bound = Find_bound(main_agent.state.Px, main_agent.state.Py, bound)
+                sFV = gef.Generate_GeoDataFrame([FV.geometry[i]])
                 sV = General_virtual_agent('FV'+str(i), x_bound, y_bound)
                 sVVO_df = gef.Generate_GeoDataFrame([gef.New_robot_polygon(main_agent.state, sV.Relative_observed_state(0,0,0), VO_range)])
                 sdiff = gef.Set_difference(sFV, sVVO_df)  
                 Del_small_area(sdiff)
-                time = time + 1
-            #print(time)                 
-            Virtual_Agent_List.append(sV)
-     
-    VVO_poly_list = [gef.New_robot_polygon(main_agent.state, virtual_agent.Relative_observed_state(0,0,0), VO_range) for virtual_agent in Virtual_Agent_List]
-    VVO_df = gef.Generate_GeoDataFrame(VVO_poly_list)
-    diff = gef.Set_difference(FV, VVO_df)
-    diff = gef.explode(diff)
-    Del_small_area(diff)
-    while(len(diff.is_empty) != 0 and sum(diff.area) > 0.2):
-        #print(sum(diff.area))
-        Modify_Virtual_List(main_agent, diff, FV)
+                time = 0
+                while(len(sdiff.is_empty) != 0 and time < 3):
+                    sV = General_virtual_agent('FV'+str(i), x_bound, y_bound)
+                    sVVO_df = gef.Generate_GeoDataFrame([gef.New_robot_polygon(main_agent.state, sV.Relative_observed_state(0,0,0), VO_range)])
+                    sdiff = gef.Set_difference(sFV, sVVO_df)  
+                    Del_small_area(sdiff)
+                    time = time + 1
+                #print(time)                 
+                Virtual_Agent_List.append(sV)
+      
         VVO_poly_list = [gef.New_robot_polygon(main_agent.state, virtual_agent.Relative_observed_state(0,0,0), VO_range) for virtual_agent in Virtual_Agent_List]
         VVO_df = gef.Generate_GeoDataFrame(VVO_poly_list)
         diff = gef.Set_difference(FV, VVO_df)
         diff = gef.explode(diff)
         Del_small_area(diff)
-    #VVO_df.plot(ax = FV.plot(ax=TEST_Map.plot(color='black'), color='red'))
-    Adjust_Old_New_VA(main_agent, Old_VA_List)
+        while(len(diff.is_empty) != 0 and sum(diff.area) > 0.2):
+            #print(sum(diff.area))
+            Modify_Virtual_List(main_agent, diff, FV)
+            VVO_poly_list = [gef.New_robot_polygon(main_agent.state, virtual_agent.Relative_observed_state(0,0,0), VO_range) for virtual_agent in Virtual_Agent_List]
+            VVO_df = gef.Generate_GeoDataFrame(VVO_poly_list)
+            diff = gef.Set_difference(FV, VVO_df)
+            diff = gef.explode(diff)
+            Del_small_area(diff)
+        #VVO_df.plot(ax = FV.plot(ax=TEST_Map.plot(color='black'), color='red'))
+        Adjust_Old_New_VA(main_agent, Old_VA_List)
+    
+    elif mode == 'Vel':
+        Old_VA_List = copy.deepcopy(Virtual_Agent_List)
+        Virtual_Agent_List = []
+        for i in FV.index:
+            bound = FV.geometry[i].bounds
+            Xmin, Ymin, Xmax, Ymax = bound[0], bound[1], bound[2], bound[3]
+            if Ymin < main_agent.state.Py:
+                Virtual_Agent_List.append(Agent.Agent('FV'+str(i), main_agent.state.Px, Ymax, 0, -main_agent.state.Px+(Xmax+Xmin)/2, 0, 0.2, main_agent.state.Px, Ymax, 0, 3, mode = 'Greedy', nonholonomic=False))
+            else:
+                Virtual_Agent_List.append(Agent.Agent('FV'+str(i), main_agent.state.Px, Ymin, 0, -main_agent.state.Px+(Xmax+Xmin)/2, 0, 0.2, main_agent.state.Px, Ymin, 0, 3, mode = 'Greedy', nonholonomic=False))
+        Adjust_Old_New_VA(main_agent, Old_VA_List)
+        VVO_poly_list = [gef.New_robot_polygon(main_agent.state, virtual_agent.Relative_observed_state(0,0,0), VO_range) for virtual_agent in Virtual_Agent_List]
+        VVO_df = gef.Generate_GeoDataFrame(VVO_poly_list)
         
+    elif mode == 'VelY':
+        Old_VA_List = copy.deepcopy(Virtual_Agent_List)
+        Virtual_Agent_List = []
+        for i in FV.index:
+            bound = FV.geometry[i].bounds
+            Xmin, Ymin, Xmax, Ymax = bound[0], bound[1], bound[2], bound[3]
+            if Xmin > main_agent.state.Px:
+                Virtual_Agent_List.append(Agent.Agent('FV'+str(i), Xmin, main_agent.state.Py, math.pi/2, -main_agent.state.Py+(Ymax+Ymin)/2, 0, 0.2, Xmin, main_agent.state.Py, 0, 3, mode = 'Greedy', nonholonomic=False))
+            else:
+                Virtual_Agent_List.append(Agent.Agent('FV'+str(i), Xmax, main_agent.state.Py, math.pi/2, -main_agent.state.Py+(Ymax+Ymin)/2, 0, 0.2, Xmax, main_agent.state.Py, 0, 3, mode = 'Greedy', nonholonomic=False))
+        Adjust_Old_New_VA(main_agent, Old_VA_List)
+        VVO_poly_list = [gef.New_robot_polygon(main_agent.state, virtual_agent.Relative_observed_state(0,0,0), VO_range) for virtual_agent in Virtual_Agent_List]
+        VVO_df = gef.Generate_GeoDataFrame(VVO_poly_list)    
+    
     return VVO_df
 
   
-def Virtual_Agent_func(main_agent: Agent.Agent, dV, Wmax, Map):
+def Virtual_Agent_func(main_agent: Agent.Agent, dV, Wmax, Map, mode='Position'):
     global Virtual_Agent_List
     if main_agent.mode == 'Oscillation' and main_agent.oscill_time > 5:
         print('Clear virtual agent')
@@ -142,7 +169,7 @@ def Virtual_Agent_func(main_agent: Agent.Agent, dV, Wmax, Map):
         main_agent.oscill_time = 0
     try:
         FV = Build_FV(main_agent, dV, Wmax, Map)
-        VVO = Find_Virtual_Agent(main_agent, FV)
+        VVO = Find_Virtual_Agent(main_agent, FV, mode)
         return copy.deepcopy(Virtual_Agent_List), FV, VVO
     except:
         print('VAf_error')
