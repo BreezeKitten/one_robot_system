@@ -199,7 +199,12 @@ def If_in_VO(main_state: State, other_state: Observed_State, time_factor=2):
     R = main_state.r + other_state.r
     if Norm2(relative_velocity) == 0:
         return False
-    Relative_angle = m.acos(Dot(P, relative_velocity)/(Norm2(P)* Norm2(relative_velocity)))
+    cosAngle = Dot(P, relative_velocity)/(Norm2(P)* Norm2(relative_velocity))
+    if cosAngle > 1:
+        cosAngle = 1
+    elif cosAngle < -1:
+        cosAngle = -1
+    Relative_angle = m.acos(cosAngle)
     if Norm2(P) <= R:
         return True
     else:
