@@ -44,7 +44,7 @@ class Subscriber:
             self.socket.settimeout(3)
             while(self.callback_flag):
                 try:
-                    raw_data = self.socket.recv(2048).decode()
+                    raw_data = self.socket.recv(4096).decode()
                     if raw_data == '':
                         print('empty data, close connect!')
                         self.callback_flag = False
@@ -98,7 +98,7 @@ class Publisher:
         
     def receive_msg(self):
         while True:
-            raw_data = self.c.recv(2048).decode()
+            raw_data = self.c.recv(4096).decode()
             if not raw_data:
                 print('disconnect!')
                 break
