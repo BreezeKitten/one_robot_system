@@ -11,7 +11,7 @@ import Communication_func as Comm
 import json
 from geometry_msgs.msg import Twist
 
-name_list = ['robot1','robot2','robot3']
+name_list = ['robot1','robot2','robot3','robot4']
 Agent_list = []
 for name in name_list:
     Agent_list.append(Agent.Agent(name, -5, 5, 0, 0, 0, 0.2, 0, 0, 0, 1))
@@ -31,6 +31,11 @@ def Pose3_CB(data):
     for agent in Agent_list:
         if agent.name == 'robot3':
             agent.state.Px, agent.state.Py, agent.state.Pth = data.linear.x, data.linear.y, data.angular.z
+                       
+def Pose4_CB(data):
+    for agent in Agent_list:
+        if agent.name == 'robot4':
+            agent.state.Px, agent.state.Py, agent.state.Pth = data.linear.x, data.linear.y, data.angular.z
 
 def vel1_CB(data):
     for agent in Agent_list:
@@ -47,6 +52,10 @@ def vel3_CB(data):
         if agent.name == 'robot3':
             agent.state.V, agent.state.W = data.linear.x, data.angular.z
 
+def vel4_CB(data):
+    for agent in Agent_list:
+        if agent.name == 'robot3':
+            agent.state.V, agent.state.W = data.linear.x, data.angular.z
             
 def Pub_process(pub_list):
         data = {}
@@ -64,10 +73,12 @@ rate = rospy.Rate(10)
 pose1_sub = rospy.Subscriber("/robot1/robot_pose",Twist,Pose1_CB)
 pose2_sub = rospy.Subscriber("/robot2/robot_pose",Twist,Pose2_CB)
 pose3_sub = rospy.Subscriber("/robot3/robot_pose",Twist,Pose3_CB)
+pose4_sub = rospy.Subscriber("/robot4/robot_pose",Twist,Pose4_CB)
 
 vel1_sub = rospy.Subscriber("/robot1/cmd_vel",Twist,vel1_CB)
 vel2_sub = rospy.Subscriber("/robot2/cmd_vel",Twist,vel2_CB)
 vel3_sub = rospy.Subscriber("/robot3/cmd_vel",Twist,vel3_CB)
+vel4_sub = rospy.Subscriber("/robot4/cmd_vel",Twist,vel4_CB)
 
 
 agent1_pub = Comm.Publisher('192.168.0.134',12341)
@@ -82,14 +93,19 @@ agent3_pub = Comm.Publisher('192.168.0.134',12343)
 agent3_pub.set_pub()
 agent3_pub.wait_connect()
 
+agent4_pub = Comm.Publisher('192.168.0.134',12344)
+agent4_pub.set_pub()
+agent4_pub.wait_connect()
+
 OP = input('command:')
 while(OP != 'Start'):
     OP = input('command:')
 
 while not rospy.is_shutdown():
-    Pub_process([agent1_pub, agent2_pub, agent3_pub])
+    Pub_process([agent1_pub, agent2_pub, agent3_pub, agent4_pub])
     rate.sleep()
 
 agent1_pub.socket.close()
 agent2_pub.socket.close()
 agent3_pub.socket.close()
+agent4_pub.socket.close()
