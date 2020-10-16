@@ -99,7 +99,7 @@ if not IS_ROS:
 
 else:
     Main_name = input('name: ')    
-    
+    File_path = input('file_path: ')
     import Agent
     import Communication_func as Comm
     import copy
@@ -126,15 +126,22 @@ else:
         Main_agent.Path.append(copy.deepcopy(Main_agent.state))        
         return        
     
-    def Set_Main_Agent():
+    def Set_Main_Agent(file_path):
         global Main_agent
-        Main_agent.state.Px = float(input('Px: '))
-        Main_agent.state.Py = float(input('Py: '))
-        Main_agent.state.Pth = float(input('Pth: '))
-        Main_agent.gx = float(input('gx: '))
-        Main_agent.gy = float(input('gy: '))
-        Main_agent.gth = float(input('gth: '))
-        Main_agent.rank = int(input('rank: '))
+        try:
+            with open(file_path,'r') as f:
+                data = json.load(f)
+                Main_agent = Agent.DicttoAgent(data[Main_name])
+        except Exception as e:
+            print('Load Agent error with:', e)
+            print('Manual Input!')
+            Main_agent.state.Px = float(input('Px: '))
+            Main_agent.state.Py = float(input('Py: '))
+            Main_agent.state.Pth = float(input('Pth: '))
+            Main_agent.gx = float(input('gx: '))
+            Main_agent.gy = float(input('gy: '))
+            Main_agent.gth = float(input('gth: '))
+            Main_agent.rank = int(input('rank: '))
 
     def Navi_process(Nav_sub):
         data = {}
@@ -174,7 +181,7 @@ else:
         pose_sub = rospy.Subscriber("/"+Main_name+"/robot_pose",Twist,Pose_CB)
         flag_sub = rospy.Subscriber("/start_flag",Bool,Flag_CB)
                 
-        Set_Main_Agent()
+        Set_Main_Agent(File_path)
 
         OP = input('Command: ')
         while(OP != 'Continue'):
