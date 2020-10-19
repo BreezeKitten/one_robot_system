@@ -101,6 +101,7 @@ class Publisher:
             raw_data = self.c.recv(4096).decode()
             if not raw_data:
                 print('disconnect!')
+                self.c.shutdown(2)
                 break
             try:
                 data = json.loads(raw_data)

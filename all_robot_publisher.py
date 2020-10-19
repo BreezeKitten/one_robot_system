@@ -12,6 +12,7 @@ import json
 from geometry_msgs.msg import Twist
 import threading
 
+
 IP = '192.168.0.134'
 name_list = ['robot1','robot2','robot3','robot4']
 Agent_list = []
@@ -27,7 +28,7 @@ class Robot_message():
     def __init__(self, name, ip):
         self.name = name
         self.ip = ip
-        self.pub = self.Build_Pub()
+        self.pub = self.Build_pub()
         self.ros_pose_sub = rospy.Subscriber("/"+name+"/robot_pose",Twist,self.Pose_CB)
         self.ros_vel_sub = rospy.Subscriber("/"+name+"/cmd_vel",Twist,self.vel_CB)
     
@@ -102,5 +103,5 @@ while(OP != 'Stop'):
     OP = input('command:')
     
 STOP_Flag = True
-t.join()
 Close_Pub()
+t.join()
