@@ -90,7 +90,7 @@ def New_robot_polygon(Main_State: Agent.State, Virtual_State: Agent.Observed_Sta
     
     return polys
 
-def Build_velocity_poly(Robot: Agent.State, dV, Wmax, approximation_method = 'Tri'):
+def Build_velocity_poly(Robot: Agent.State, dV, Wmax, approximation_method = 'Tri', safety_factor = 1):
     P = Point(Robot.Px, Robot.Py)
     theta = Robot.Pth
     V = Robot.V    
@@ -111,10 +111,11 @@ def Build_velocity_poly(Robot: Agent.State, dV, Wmax, approximation_method = 'Tr
         poly_list = [Polygon([A.List(), B.List(), C.List(), D.List()])]    
     # triangle approximation
     if approximation_method == 'Tri':
-        A = Point(Vv.x*(V+dV)/Vv.length + Vo.x*(V+dV)*Wmax/Vo.length + P.x, Vv.y*(V+dV)/Vv.length + Vo.y*(V+dV)*Wmax/Vo.length + P.y)
-        B = Point(Vv.x*(V-dV)/Vv.length + Vo.x*(V-dV)*Wmax/Vo.length + P.x, Vv.y*(V-dV)/Vv.length + Vo.y*(V-dV)*Wmax/Vo.length + P.y)
-        C = Point(Vv.x*(V-dV)/Vv.length - Vo.x*(V-dV)*Wmax/Vo.length + P.x, Vv.y*(V-dV)/Vv.length - Vo.y*(V-dV)*Wmax/Vo.length + P.y)
-        D = Point(Vv.x*(V+dV)/Vv.length - Vo.x*(V+dV)*Wmax/Vo.length + P.x, Vv.y*(V+dV)/Vv.length - Vo.y*(V+dV)*Wmax/Vo.length + P.y)
+        w_len = m.tan(Wmax/2)/Vo.length * safety_factor
+        A = Point(Vv.x*(V+dV)/Vv.length + Vo.x*(V+dV)*w_len + P.x, Vv.y*(V+dV)/Vv.length + Vo.y*(V+dV)*w_len + P.y)
+        B = Point(Vv.x*(V-dV)/Vv.length + Vo.x*(V-dV)*w_len + P.x, Vv.y*(V-dV)/Vv.length + Vo.y*(V-dV)*w_len + P.y)
+        C = Point(Vv.x*(V-dV)/Vv.length - Vo.x*(V-dV)*w_len + P.x, Vv.y*(V-dV)/Vv.length - Vo.y*(V-dV)*w_len + P.y)
+        D = Point(Vv.x*(V+dV)/Vv.length - Vo.x*(V+dV)*w_len + P.x, Vv.y*(V+dV)/Vv.length - Vo.y*(V+dV)*w_len + P.y)
         if V >= 0:
             if V*(V-dV) > 0 :#or V*(V+dV) < 0:
                 poly_list = [Polygon([A.List(), B.List(), C.List(), D.List()])]
