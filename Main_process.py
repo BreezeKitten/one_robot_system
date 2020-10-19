@@ -206,6 +206,7 @@ else:
         
         
         sub.socket.close()
+        sub2.socket.close()
 
 
 

@@ -246,6 +246,10 @@ if __name__ == '__main__':
                 Navigation_func()
         if OP == 'Pub':
             pub.publish_msg(json.dumps({'header':'Message'}))
+        if OP == 'reconnect':
+            pub.wait_connect()
+            
         OP = input('Command: ')
+    pub.socket.shutdown(2)
     pub.socket.close()
     
