@@ -10,52 +10,43 @@ import Agent
 import Communication_func as Comm
 import json
 from geometry_msgs.msg import Twist
+import threading
 
+IP = '192.168.0.134'
 name_list = ['robot1','robot2','robot3','robot4']
 Agent_list = []
+message_list = []
+Pub_List = []
+STOP_Flag = False
+
 for name in name_list:
     Agent_list.append(Agent.Agent(name, -5, 5, 0, 0, 0, 0.2, 0, 0, 0, 1))
+    
 
-
-def Pose1_CB(data):
-    for agent in Agent_list:
-        if agent.name == 'robot1':
-            agent.state.Px, agent.state.Py, agent.state.Pth = data.linear.x, data.linear.y, data.angular.z
-
-def Pose2_CB(data):
-    for agent in Agent_list:
-        if agent.name == 'robot2':
-            agent.state.Px, agent.state.Py, agent.state.Pth = data.linear.x, data.linear.y, data.angular.z
-            
-def Pose3_CB(data):
-    for agent in Agent_list:
-        if agent.name == 'robot3':
-            agent.state.Px, agent.state.Py, agent.state.Pth = data.linear.x, data.linear.y, data.angular.z
-                       
-def Pose4_CB(data):
-    for agent in Agent_list:
-        if agent.name == 'robot4':
-            agent.state.Px, agent.state.Py, agent.state.Pth = data.linear.x, data.linear.y, data.angular.z
-
-def vel1_CB(data):
-    for agent in Agent_list:
-        if agent.name == 'robot1':
-            agent.state.V, agent.state.W = data.linear.x, data.angular.z
-            
-def vel2_CB(data):
-    for agent in Agent_list:
-        if agent.name == 'robot2':
-            agent.state.V, agent.state.W = data.linear.x, data.angular.z
-
-def vel3_CB(data):
-    for agent in Agent_list:
-        if agent.name == 'robot3':
-            agent.state.V, agent.state.W = data.linear.x, data.angular.z
-
-def vel4_CB(data):
-    for agent in Agent_list:
-        if agent.name == 'robot3':
-            agent.state.V, agent.state.W = data.linear.x, data.angular.z
+class Robot_message():
+    def __init__(self, name, ip):
+        self.name = name
+        self.ip = ip
+        self.pub = self.Build_Pub()
+        self.ros_pose_sub = rospy.Subscriber("/"+name+"/robot_pose",Twist,self.Pose_CB)
+        self.ros_vel_sub = rospy.Subscriber("/"+name+"/cmd_vel",Twist,self.vel_CB)
+    
+    def Build_pub(self):
+        pub = Comm.Publisher(self.ip,12340+int(name[-1]))
+        pub.set_pub()
+        pub.wait_connect()
+        return pub
+        
+    def Pose_CB(self, data):
+        for agent in Agent_list:
+            if agent.name == self.name:
+                agent.state.Px, agent.state.Py, agent.state.Pth = data.linear.x, data.linear.y, data.angular.z
+    
+    def vel_CB(self, data):
+        for agent in Agent_list:
+            if agent.name == self.name:
+                agent.state.V, agent.state.W = data.linear.x, data.angular.z                
+        
             
 def Pub_process(pub_list):
         data = {}
@@ -68,44 +59,47 @@ def Pub_process(pub_list):
             pub.publish_msg(jdata)
         return
             
+def tread_Pub_Process(pub_list):
+    global STOP_Flag
+    while not (rospy.is_shutdown() or STOP_Flag):
+        Pub_process(Pub_List)
+        rate.sleep()
+    print('Stop!')
+    return
+
+def Build_Pub():
+    global message_list, Pub_List
+    for name in name_list:
+        message_list.append(Robot_message(name, IP))
+        Pub_List.append(message_list[-1].pub)
+    return
+        
+def Close_Pub():
+    global message_list, Pub_List
+    for pub in Pub_List:
+        pub.socket.close()
+    message_list, Pub_List = [], []
+    return
+
 rospy.init_node('global_pose_node',anonymous=True)
 rate = rospy.Rate(10)
-pose1_sub = rospy.Subscriber("/robot1/robot_pose",Twist,Pose1_CB)
-pose2_sub = rospy.Subscriber("/robot2/robot_pose",Twist,Pose2_CB)
-pose3_sub = rospy.Subscriber("/robot3/robot_pose",Twist,Pose3_CB)
-pose4_sub = rospy.Subscriber("/robot4/robot_pose",Twist,Pose4_CB)
-
-vel1_sub = rospy.Subscriber("/robot1/cmd_vel",Twist,vel1_CB)
-vel2_sub = rospy.Subscriber("/robot2/cmd_vel",Twist,vel2_CB)
-vel3_sub = rospy.Subscriber("/robot3/cmd_vel",Twist,vel3_CB)
-vel4_sub = rospy.Subscriber("/robot4/cmd_vel",Twist,vel4_CB)
 
 
-agent1_pub = Comm.Publisher('192.168.0.134',12341)
-agent1_pub.set_pub()
-agent1_pub.wait_connect() 
-
-agent2_pub = Comm.Publisher('192.168.0.134',12342)
-agent2_pub.set_pub()
-agent2_pub.wait_connect() 
-
-agent3_pub = Comm.Publisher('192.168.0.134',12343)
-agent3_pub.set_pub()
-agent3_pub.wait_connect()
-
-agent4_pub = Comm.Publisher('192.168.0.134',12344)
-agent4_pub.set_pub()
-agent4_pub.wait_connect()
-
+Build_Pub()
 OP = input('command:')
-while(OP != 'Start'):
+while(OP != 'Stop'):
+    if OP == 'Start':
+        STOP_Flag = False
+        t = threading.Thread(target=tread_Pub_Process, args=(Pub_List,))
+        t.start()
+    if OP == 'Stop_Pub':
+        STOP_Flag = True
+        t.join()
+    if OP == 'Rebuild':
+        Close_Pub()
+        Build_Pub()
     OP = input('command:')
-
-while not rospy.is_shutdown():
-    Pub_process([agent1_pub, agent2_pub, agent3_pub, agent4_pub])
-    rate.sleep()
-
-agent1_pub.socket.close()
-agent2_pub.socket.close()
-agent3_pub.socket.close()
-agent4_pub.socket.close()
+    
+STOP_Flag = True
+t.join()
+Close_Pub()
