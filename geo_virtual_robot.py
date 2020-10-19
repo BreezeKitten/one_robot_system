@@ -18,7 +18,7 @@ TEST_Agent = Agent.Agent('TEST', 0, 0, 0, 0, 0, 0.5, 0, 0, 0, 3, mode = 'Greedy'
 Virtual_Agent_List = []
 
 def Build_FV(main_agent: Agent.Agent, dV, Wmax, env_map):
-    V_set = gef.Build_velocity_poly(main_agent.state, dV, Wmax)
+    V_set = gef.Build_velocity_poly(main_agent.state, dV, Wmax, safety_factor=1.5)
     FV = gef.Set_intersection(V_set, env_map)
     Del_small_area(FV)
     return FV
