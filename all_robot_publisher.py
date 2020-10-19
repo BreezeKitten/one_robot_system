@@ -32,7 +32,7 @@ class Robot_message():
         self.ros_vel_sub = rospy.Subscriber("/"+name+"/cmd_vel",Twist,self.vel_CB)
     
     def Build_pub(self):
-        pub = Comm.Publisher(self.ip,12340+int(name[-1]))
+        pub = Comm.Publisher(self.ip, 12340+int(self.name[-1]))
         pub.set_pub()
         pub.wait_connect()
         return pub
@@ -77,6 +77,7 @@ def Build_Pub():
 def Close_Pub():
     global message_list, Pub_List
     for pub in Pub_List:
+        pub.socket.shutdown(2)
         pub.socket.close()
     message_list, Pub_List = [], []
     return
