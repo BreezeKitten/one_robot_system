@@ -32,6 +32,7 @@ class Subscriber:
                 print('connect error! retry:', retry)
     
     def disconnect(self):
+        self.socket.shutdown(2)
         self.socket.close()
         self.connect_flag = False
         print('disconnect!')        
@@ -63,6 +64,7 @@ class Subscriber:
                 except:
                     continue
             self.disconnect()
+        return
     
     def background_callback(self):
         t = threading.Thread(target=self.start_callback)
