@@ -98,8 +98,14 @@ if not IS_ROS:
 
 
 else:
-    Main_name = input('name: ')    
-    File_path = input('file_path: ')
+    while True:
+        try:
+            Main_name = input('name: ')    
+            File_path = input('file_path: ')
+            break
+        except Exception as e:
+            print('input error:', e)
+            
     import Agent
     import Communication_func as Comm
     import copy
