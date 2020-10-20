@@ -47,11 +47,18 @@ def Show_Command():
     print('#################')
     for item in Command_list:
         print('## '+item)
+    print('#################')
     return
 
-Show_Command()
-OP = input('Command:')
+OP = ''
 while(OP != 'Stop'):
+    try:
+        Show_Command()
+        OP = input('Command:')
+    except Exception as e:
+        print('input error:', e)
+        pass
+        
     if OP not in Command_list:
         print('not existed coommand!', OP)
     elif OP == 'Start':
@@ -67,5 +74,8 @@ while(OP != 'Stop'):
             gth = str(input('gth: '))
             Goal_pub(robot_name, gx, gy, gth)
         except Exception as e:
-            print('Start error:', e)            
+            print('Manial error:', e)
+
+
+                    
     
