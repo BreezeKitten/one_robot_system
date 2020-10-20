@@ -38,7 +38,7 @@ def Goal_pub(robot_name, gx, gy, gth):
     goal = PoseStamped()
     goal.header.frame_id = 'map'
     goal.pose.position.x, goal.pose.position.y, goal.pose.position.z = gx, gy, 0
-    [goal.pose.orientaiotn.x, goal.pose.orientaiotn.y, goal.pose.orientaiotn.z, goal.pose.orientaiotn.w] = Angle_table[gth]
+    [goal.pose.orientation.x, goal.pose.orientation.y, goal.pose.orientation.z, goal.pose.orientation.w] = Angle_table[gth]
     goal_pub_dict[robot_name].publish(goal)
     return
 
@@ -57,7 +57,7 @@ while(OP != 'Stop'):
         OP = input('Command:')
     except Exception as e:
         print('input error:', e)
-        pass
+        continue
         
     if OP not in Command_list:
         print('not existed coommand!', OP)
