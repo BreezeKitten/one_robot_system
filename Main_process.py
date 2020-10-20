@@ -106,12 +106,18 @@ else:
     import json
     import rospy
     from geometry_msgs.msg import Twist
+    from geometry_msgs.msg import PoseStamped
     from std_msgs.msg import Bool
     start_flag = False
     robot_cmd_vel = rospy.Publisher("/"+Main_name+"/cmd_vel", Twist, queue_size=10)
     Cmd_Vel = Twist()
     Main_agent = Agent.Agent(Main_name, 0, 0, 0, 0, 0, 0.2, 0, 0, 0, 1)
     Other_agent_list = [Agent.Agent('test1', -3, 1, 0, 0, 0, 0.2, 0, 0, 0, 1), Agent.Agent('test2', -3, -1, 0, 0, 0, 0.2, 0, 0, 0, 1)]
+    
+    def q_to_e(x,y,z,w):
+        y_2d = math.atan2(2*(w*z+x*y),1-2*(z*z+y*y))
+        return y_2d
+    
     
     def Command_CB(data):
         V_cmd, W_cmd = Saturation(data['V'], data['W'], 0.5, 1)
@@ -124,7 +130,13 @@ else:
         global Main_agent
         Main_agent.state.Px, Main_agent.state.Py, Main_agent.state.Pth = data.linear.x, data.linear.y, data.angular.z
         Main_agent.Path.append(copy.deepcopy(Main_agent.state))        
-        return        
+        return       
+    
+    def Goal_CB(data):
+        global Main_agent
+        Main_agent.gx, Main_agent.gy, Main_agent.gth = data.pose.position.x, data.pose.position.y, q_to_e(data.pose.orientation.x,data.pose.orientation.y,data.pose.orientation.z,data.pose.orientation.w)
+        print('Goal change to (', Main_agent.gx, Main_agent.gy, Main_agent.gth, ')')
+        return
     
     def Set_Main_Agent(file_path):
         global Main_agent
@@ -174,39 +186,52 @@ else:
         else:
             print('mission pause!')
 
+
     
     if __name__ == '__main__':
         rospy.init_node('navi_node_'+Main_name,anonymous=True)
         rate = rospy.Rate(10)
         pose_sub = rospy.Subscriber("/"+Main_name+"/robot_pose",Twist,Pose_CB)
         flag_sub = rospy.Subscriber("/start_flag",Bool,Flag_CB)
-                
+        goal_sub = rospy.Subscriber("/"+Main_name+"/move_base_simple/goal",PoseStamped,Goal_CB)        
+        
         Set_Main_Agent(File_path)
 
-        OP = input('Command: ')
-        while(OP != 'Continue'):
-            if OP == 'Connect':
-                sub = Comm.Subscriber('127.0.0.1',12346, cb_func=Command_CB)
-                sub.connect()
-                t = sub.background_callback()
-            if OP == 'Connect2':
-                sub2 = Comm.Subscriber('192.168.0.134',12340+int(Main_name[-1]), cb_func=Other_Set_Callback)
-                sub2.connect()
-                t2 = sub2.background_callback()
-            OP = input('Command: ')
+#        OP = input('Command: ')
+#        while(OP != 'Continue'):
+#            if OP == 'Connect':
+#                sub = Comm.Subscriber('127.0.0.1',12346, cb_func=Command_CB)
+#                sub.connect()
+#                t = sub.background_callback()
+#            if OP == 'Connect2':
+#                sub2 = Comm.Subscriber('192.168.0.134',12340+int(Main_name[-1]), cb_func=Other_Set_Callback)
+#                sub2.connect()
+#                t2 = sub2.background_callback()
+#            OP = input('Command: ')
+        sub = Comm.Subscriber('127.0.0.1',12346, cb_func=Command_CB)
+        sub.connect()
+        t = sub.background_callback()
+        sub2 = Comm.Subscriber('192.168.0.134',12340+int(Main_name[-1]), cb_func=Other_Set_Callback)
+        sub2.connect()
+        t2 = sub2.background_callback()
         
+        arrived_count = 0
         while not rospy.is_shutdown():
             if start_flag:
                 if Check_Goal(Main_agent, Calculate_distance(0.1, 0.1, 0, 0), math.pi/15):
                     print('Arrived!')
                     Command_CB({'V':0, 'W':0})
+                    arrived_count += 1
+                    if arrived_count > 5:
+                        start_flag = False
                 else:
+                    arrived_count = 0
                     Navi_process(sub)
             rate.sleep()
         
         
-        sub.socket.close()
-        sub2.socket.close()
+        sub.disconnect()
+        sub2.disconnect()
 
 
 
