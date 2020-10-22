@@ -34,10 +34,10 @@ def Start_nav():
     start_flag_pub.publish(data)
     return
 
-def Goal_pub(robot_name, gx, gy, gth):
+def Goal_pub(robot_name, gx, gy, gth, rank):
     goal = PoseStamped()
     goal.header.frame_id = 'map'
-    goal.pose.position.x, goal.pose.position.y, goal.pose.position.z = gx, gy, 0
+    goal.pose.position.x, goal.pose.position.y, goal.pose.position.z = gx, gy, rank
     [goal.pose.orientation.x, goal.pose.orientation.y, goal.pose.orientation.z, goal.pose.orientation.w] = Angle_table[gth]
     goal_pub_dict[robot_name].publish(goal)
     return
@@ -72,7 +72,8 @@ while(OP != 'Stop'):
             gx = float(input('gx: '))
             gy = float(input('gy: '))
             gth = str(input('gth: '))
-            Goal_pub(robot_name, gx, gy, gth)
+            rank = float(input('rank: '))
+            Goal_pub(robot_name, gx, gy, gth, rank)
         except Exception as e:
             print('Manial error:', e)
 

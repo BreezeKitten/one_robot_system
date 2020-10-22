@@ -141,7 +141,8 @@ else:
     def Goal_CB(data):
         global Main_agent
         Main_agent.gx, Main_agent.gy, Main_agent.gth = data.pose.position.x, data.pose.position.y, q_to_e(data.pose.orientation.x,data.pose.orientation.y,data.pose.orientation.z,data.pose.orientation.w)
-        print('Goal change to (', Main_agent.gx, Main_agent.gy, Main_agent.gth, ')')
+        Main_agent.rank =  data.pose.position.z
+        print('Goal change to (', Main_agent.gx, Main_agent.gy, Main_agent.gth, '), rank change to ', Main_agent.rank)
         return
     
     def Set_Main_Agent(file_path):
