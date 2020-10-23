@@ -8,6 +8,7 @@ Created on Sun Sep 13 21:44:46 2020
 import socket
 import json
 import threading
+import struct
 
 
 Doki_msg = json.dumps({'header':'Doki'})
@@ -35,7 +36,44 @@ class Subscriber:
         self.socket.shutdown(2)
         self.socket.close()
         self.connect_flag = False
-        print('disconnect!')        
+        print('disconnect!')
+        return
+    
+    def send_msg(self, msg):
+        jmsg = json.dumps(msg)
+        if self.socket:
+            frmt = "=%ds" % len(msg)
+            packed_msg = struct.pack(frmt, bytes(jmsg, 'ascii'))
+            packed_hdr = struct.pack('!I', len(packed_msg))
+            self._send(packed_hdr)
+            self._send(packed_msg)
+    
+    def _send(self, msg):
+        sent = 0
+        while sent < len(msg):
+            sent += self.socket.send(msg[sent:])
+    
+    def _read(self, size):
+        data = b''
+        while len(data) < size:
+            data_tmp = self.socket.recv(size-len(data))
+            data += data_tmp
+            if data_tmp == b'':
+                self.callback_flag = False
+                raise RuntimeError('socket connection broken')
+        return data
+    
+    def _msg_length(self):
+        d = self._read(4)
+        s = struct.unpack('!I', d)
+        return s[0]
+    
+    def read_msg(self):
+        size = self._msg_length()
+        data = self._read(size)
+        frmt = "=%ds" % size
+        msg = struct.unpack(frmt, data)
+        return json.loads(str(msg[0]), 'ascill')
         
     def start_callback(self):
         if self.connect_flag == False:
@@ -45,24 +83,20 @@ class Subscriber:
             self.socket.settimeout(3)
             while(self.callback_flag):
                 try:
-                    raw_data = self.socket.recv(4096).decode()
-                    if raw_data == '':
-                        print('empty data, close connect!')
-                        self.callback_flag = False
-                    else:
-                        data = json.loads(raw_data)
-                        if 'header' in data:
-                            if data['header'] == 'Doki':
-                                print('still alive!')
-                                self.socket.send(b'alive')
-                            elif data['header'] == 'Message':
-                                self.callback(data)
-                            else:
-                                print('header error!')
+                    data = self.read_msg()
+                    if 'header' in data:
+                        if data['header'] == 'Doki':
+                            print('still alive!')
+                            self.socket.send(b'alive')
+                        elif data['header'] == 'Message':
+                            self.callback(data)
                         else:
-                            print('no header in data!')
-                except:
-                    continue
+                            print('header error!')
+                    else:
+                        print('no header in data!')
+                except Exception as e:
+                    print('except error:', e)
+                    continue 
             self.disconnect()
         return
     
@@ -92,21 +126,50 @@ class Publisher:
         t = threading.Thread(target=self.accept_connect)
         t.start()
         return t
+
+    def send_msg(self, msg):
+        jmsg = msg  #the msg has been json
+        if self.socket:
+            frmt = "=%ds" % len(msg)
+            packed_msg = struct.pack(frmt, bytes(jmsg, 'ascii'))
+            packed_hdr = struct.pack('!I', len(packed_msg))
+            self._send(packed_hdr)
+            self._send(packed_msg)
     
-    def publish_msg(self, msg):
-        self.socket.settimeout(3)
-        self.c.send(msg.encode())
-        self.socket.settimeout(None)
+    def _send(self, msg):
+        sent = 0
+        while sent < len(msg):
+            sent += self.socket.send(msg[sent:])
+    
+    def _read(self, size):
+        data = b''
+        while len(data) < size:
+            data_tmp = self.socket.recv(size-len(data))
+            data += data_tmp
+            if data_tmp == b'':
+                self.callback_flag = False
+                raise RuntimeError('socket connection broken')
+        return data
+    
+    def _msg_length(self):
+        d = self._read(4)
+        s = struct.unpack('!I', d)
+        return s[0]
+    
+    def read_msg(self):
+        size = self._msg_length()
+        data = self._read(size)
+        frmt = "=%ds" % size
+        msg = struct.unpack(frmt, data)
+        return json.loads(str(msg[0]), 'ascill')
+    
+    def publish_msg(self, msg): #Keep the interface for small code modify
+        self.send_msg(msg)
         
     def receive_msg(self):
         while True:
-            raw_data = self.c.recv(4096).decode()
-            if not raw_data:
-                print('disconnect!')
-                self.c.shutdown(2)
-                break
             try:
-                data = json.loads(raw_data)
+                data = self.read_msg()
                 if 'header' in data:
                     if data['header'] == 'Message':
                         if self.callback != None:
