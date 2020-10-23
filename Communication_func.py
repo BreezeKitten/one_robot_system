@@ -91,7 +91,7 @@ class Subscriber:
                             if abs(recv_time - data['TimeStamp']) > 0.2:
                                 print('Expired data!')
                             elif self.callback != None:
-                                print(data)
+                                #print(data)
                                 self.callback(data)
                             else:
                                 print('no callback func')
@@ -180,7 +180,7 @@ class Publisher:
                         if abs(recv_time - data['TimeStamp']) > 0.2:
                             print('Expired data!')
                         elif self.callback != None:
-                            print(data)
+                            #print(data)
                             self.callback(data)
                         else:
                             print('no callback func')
