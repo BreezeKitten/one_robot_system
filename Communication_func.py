@@ -9,6 +9,7 @@ import socket
 import json
 import threading
 import struct
+import time
 
 
 Doki_msg = json.dumps({'header':'Doki'})
@@ -40,6 +41,7 @@ class Subscriber:
         return
     
     def send_msg(self, msg):
+        msg['TimeStamp'] = time.time()
         jmsg = json.dumps(msg)
         if self.socket:
             frmt = "=%ds" % len(jmsg)
@@ -83,13 +85,17 @@ class Subscriber:
             while(self.callback_flag):
                 try:
                     data = self.read_msg()
+                    recv_time = time.time()
                     if 'header' in data:
-                        if data['header'] == 'Doki':
-                            print('still alive!')
-                            self.socket.send(b'alive')
-                        elif data['header'] == 'Message':
-                            print(data)
-                            self.callback(data)
+                        if data['header'] == 'Message':
+                            if abs(recv_time - data['TimeStamp']) > 0.2:
+                                print('Expired data!')
+                            elif self.callback != None:
+                                print(data)
+                                self.callback(data)
+                            else:
+                                print('no callback func')
+                                print('receive data: ',data)
                         else:
                             print('header error!')
                     else:
@@ -128,7 +134,8 @@ class Publisher:
         return t
 
     def send_msg(self, msg):
-        jmsg = msg  #the msg has been json
+        msg['TimeStamp'] = time.time()
+        jmsg = json.dumps(msg)
         if self.socket:
             frmt = "=%ds" % len(jmsg)
             packed_msg = struct.pack(frmt, jmsg.encode('utf-8'))
@@ -162,17 +169,17 @@ class Publisher:
         frmt = "=%ds" % size
         msg = struct.unpack(frmt, data)
         return json.loads(msg[0].decode('utf-8'))
-    
-    def publish_msg(self, msg): #Keep the interface for small code modify
-        self.send_msg(msg)
         
     def receive_msg(self):
         while True:
             try:
                 data = self.read_msg()
+                recv_time = time.time()
                 if 'header' in data:
                     if data['header'] == 'Message':
-                        if self.callback != None:
+                        if abs(recv_time - data['TimeStamp']) > 0.2:
+                            print('Expired data!')
+                        elif self.callback != None:
                             print(data)
                             self.callback(data)
                         else:
