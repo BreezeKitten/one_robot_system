@@ -43,7 +43,7 @@ class Subscriber:
         jmsg = json.dumps(msg)
         if self.socket:
             frmt = "=%ds" % len(jmsg)
-            packed_msg = struct.pack(frmt, bytes(jmsg, 'ascii'))
+            packed_msg = struct.pack(frmt, jmsg.encode('utf-8'))
             packed_hdr = struct.pack('!I', len(packed_msg))
             self._send(packed_hdr)
             self._send(packed_msg)
@@ -73,7 +73,7 @@ class Subscriber:
         data = self._read(size)
         frmt = "=%ds" % size
         msg = struct.unpack(frmt, data)
-        return json.loads(str(msg[0]), 'ascill')
+        return json.loads(str(msg[0]), 'utf-8')
         
     def start_callback(self):
         if self.connect_flag == False:
@@ -131,7 +131,7 @@ class Publisher:
         jmsg = msg  #the msg has been json
         if self.socket:
             frmt = "=%ds" % len(msg)
-            packed_msg = struct.pack(frmt, bytes(jmsg, 'ascii'))
+            packed_msg = struct.pack(frmt, jmsg.encode('utf-8'))
             packed_hdr = struct.pack('!I', len(packed_msg))
             self._send(packed_hdr)
             self._send(packed_msg)
@@ -161,7 +161,7 @@ class Publisher:
         data = self._read(size)
         frmt = "=%ds" % size
         msg = struct.unpack(frmt, data)
-        return json.loads(str(msg[0]), 'ascill')
+        return json.loads(str(msg[0]), 'utf-8')
     
     def publish_msg(self, msg): #Keep the interface for small code modify
         self.send_msg(msg)
