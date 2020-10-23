@@ -226,7 +226,7 @@ else:
                     print('Arrived!')
                     Command_CB({'V':0, 'W':0})
                     arrived_count += 1
-                    if arrived_count > 5:
+                    if arrived_count > 3:
                         start_flag = False
                 else:
                     arrived_count = 0
