@@ -8,6 +8,7 @@ Created on Fri Sep 25 10:52:14 2020
 IS_ROS = True
 deltaT = 0.1
 import math
+import sys
 
 def Saturation(V, W, Vmax, Wmax):
     Vsat, Wsat = V, W
@@ -30,7 +31,7 @@ def Calculate_distance(x1, y1, x2, y2):
 
 def Check_Goal(agent, position_tolerance, orientation_tolerance):    
     position_error = Calculate_distance(agent.state.Px, agent.state.Py, agent.gx, agent.gy)
-    orientation_error = abs(agent.state.Pth - agent.gth)
+    orientation_error = abs(agent.state.Pth - Agent.Correct_angle(agent.gth))
     if (position_error < position_tolerance) and (orientation_error < orientation_tolerance):
         return True
     else:
@@ -100,7 +101,7 @@ if not IS_ROS:
 else:
     while True:
         try:
-            Main_name = input('name: ')    
+            Main_name = sys.argv[1]    
             File_path = 'init_config/m1_sR.json'
             break
         except Exception as e:
@@ -174,17 +175,20 @@ else:
         return
     
     def Other_Set_Callback(data):
-        global Other_agent_list
+        global Other_agent_list, Main_agent
         Other_agent_list = []
         Agent_data = data['Agent_data']
         for agent_dict in Agent_data:
             agent = Agent.DicttoAgent(agent_dict)
             if agent.name != Main_name:
                 Other_agent_list.append(agent)
+            else:
+                Main_agent.state.V, Main_agent.state.W = agent.state.V, agent.state.W
+                
                 
     def Flag_CB(data):
         global start_flag 
-        start_flag = data
+        start_flag = data.data
         if start_flag:
             print('mission start!')
         else:
