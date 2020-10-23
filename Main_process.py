@@ -101,7 +101,7 @@ else:
     while True:
         try:
             Main_name = input('name: ')    
-            File_path = input('file_path: ')
+            File_path = 'init_config/m1_sR.json'
             break
         except Exception as e:
             print('input error:', e)
