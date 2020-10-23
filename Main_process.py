@@ -170,10 +170,7 @@ else:
         data['Agent_data'] = [Main_agent.Transform_to_Dict()]
         for agent in Other_agent_list:
             data['Agent_data'].append(agent.Transform_to_Dict())        
-        jdata = json.dumps(data)
-        Nav_sub.socket.settimeout(3)
-        Nav_sub.socket.send(jdata.encode())
-        Nav_sub.socket.settimeout(None)
+        Nav_sub.send_msg(data)
         return
     
     def Other_Set_Callback(data):
@@ -234,6 +231,8 @@ else:
                 else:
                     arrived_count = 0
                     Navi_process(sub)
+            else:
+                Command_CB({'V':0, 'W':0})
             rate.sleep()
         
         
