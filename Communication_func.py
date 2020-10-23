@@ -42,7 +42,7 @@ class Subscriber:
     def send_msg(self, msg):
         jmsg = json.dumps(msg)
         if self.socket:
-            frmt = "=%ds" % len(msg)
+            frmt = "=%ds" % len(jmsg)
             packed_msg = struct.pack(frmt, bytes(jmsg, 'ascii'))
             packed_hdr = struct.pack('!I', len(packed_msg))
             self._send(packed_hdr)
@@ -169,6 +169,7 @@ class Publisher:
     def receive_msg(self):
         while True:
             try:
+                self.socket.settimeout(3)
                 data = self.read_msg()
                 if 'header' in data:
                     if data['header'] == 'Message':
@@ -182,7 +183,7 @@ class Publisher:
                 else:
                     print('no header in data!')
             except Exception as e:
-                print('except error:', e)
+                print('Pub recv except error:', e)
                 continue                
         
 
