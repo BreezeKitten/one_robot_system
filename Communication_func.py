@@ -88,6 +88,7 @@ class Subscriber:
                             print('still alive!')
                             self.socket.send(b'alive')
                         elif data['header'] == 'Message':
+                            print(data)
                             self.callback(data)
                         else:
                             print('header error!')
@@ -172,6 +173,7 @@ class Publisher:
                 if 'header' in data:
                     if data['header'] == 'Message':
                         if self.callback != None:
+                            print(data)
                             self.callback(data)
                         else:
                             print('no callback func')
