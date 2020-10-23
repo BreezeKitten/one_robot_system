@@ -55,9 +55,8 @@ def Pub_process(pub_list):
         data['Agent_data'] = []
         for agent in Agent_list:
             data['Agent_data'].append(agent.Transform_to_Dict())        
-        jdata = json.dumps(data)
         for pub in pub_list:
-            pub.publish_msg(jdata)
+            pub.send_msg(data)
         return
             
 def tread_Pub_Process(pub_list):
