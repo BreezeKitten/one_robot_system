@@ -8,10 +8,11 @@ Created on Tue Oct 20 17:21:06 2020
 import rospy
 from geometry_msgs.msg import PoseStamped
 from std_msgs.msg import Bool
+import sys
 
 
-Command_list = ['Stop', 'Start', 'Manual']
-name_list = ['robot1', 'robot2', 'robot3', 'robot4']
+Command_list = ['Stop', 'Start', 'Pause', 'Manual']
+name_list = ['robot'+str(i+1) for i in range(int(sys.argv[1]))]
 
 rospy.init_node('tool', anonymous=True)
 
@@ -30,7 +31,13 @@ start_flag_pub = rospy.Publisher("/start_flag",Bool, queue_size=10)
 
 def Start_nav():
     data = Bool()
-    data = True
+    data.data = True
+    start_flag_pub.publish(data)
+    return
+
+def Pause_nav():
+    data = Bool()
+    data.data = False
     start_flag_pub.publish(data)
     return
 
@@ -66,6 +73,11 @@ while(OP != 'Stop'):
             Start_nav()
         except Exception as e:
             print('Start error:', e)
+    elif OP == 'Pause':
+        try:
+            Pause_nav()
+        except Exception as e:
+            print('Pause error:', e)
     elif OP == 'Manual':
         try:
             robot_name = input('robot_name: ')

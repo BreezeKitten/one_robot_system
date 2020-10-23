@@ -8,13 +8,12 @@ Created on Wed Oct  7 15:38:04 2020
 import rospy
 import Agent
 import Communication_func as Comm
-import json
 from geometry_msgs.msg import Twist
 import threading
-
+import sys
 
 IP = '192.168.0.134'
-name_list = ['robot1','robot2','robot3','robot4']
+name_list = ['robot'+str(i+1) for i in range(int(sys.argv[1]))]
 Agent_list = []
 message_list = []
 Pub_List = []
