@@ -80,7 +80,6 @@ class Subscriber:
             print('still not connect!')
         else:
             self.callback_flag = True
-            self.socket.settimeout(3)
             while(self.callback_flag):
                 try:
                     data = self.read_msg()
@@ -144,7 +143,7 @@ class Publisher:
     def _read(self, size):
         data = b''
         while len(data) < size:
-            data_tmp = self.socket.recv(size-len(data))
+            data_tmp = self.c.recv(size-len(data))
             data += data_tmp
             if data_tmp == b'':
                 self.callback_flag = False
@@ -169,7 +168,6 @@ class Publisher:
     def receive_msg(self):
         while True:
             try:
-                self.socket.settimeout(3)
                 data = self.read_msg()
                 if 'header' in data:
                     if data['header'] == 'Message':
