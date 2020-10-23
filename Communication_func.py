@@ -138,7 +138,7 @@ class Publisher:
     def _send(self, msg):
         sent = 0
         while sent < len(msg):
-            sent += self.socket.send(msg[sent:])
+            sent += self.c.send(msg[sent:])
     
     def _read(self, size):
         data = b''
