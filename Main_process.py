@@ -116,7 +116,7 @@ else:
     from geometry_msgs.msg import PoseStamped
     from std_msgs.msg import Bool
     start_flag = False
-    robot_cmd_vel = rospy.Publisher("/"+Main_name+"/cmd_vel", Twist, queue_size=10)
+    robot_cmd_vel = rospy.Publisher("/"+Main_name+"/raw_cmd_vel", Twist, queue_size=10)
     Cmd_Vel = Twist()
     Main_agent = Agent.Agent(Main_name, 0, 0, 0, 0, 0, 0.2, 0, 0, 0, 1)
     Other_agent_list = [Agent.Agent('test1', -3, 1, 0, 0, 0, 0.2, 0, 0, 0, 1), Agent.Agent('test2', -3, -1, 0, 0, 0, 0.2, 0, 0, 0, 1)]
@@ -230,7 +230,7 @@ else:
                     print('Arrived!')
                     Command_CB({'V':0, 'W':0})
                     arrived_count += 1
-                    if arrived_count > 3:
+                    if arrived_count > 1:
                         start_flag = False
                 else:
                     arrived_count = 0
