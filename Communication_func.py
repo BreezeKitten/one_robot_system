@@ -88,7 +88,7 @@ class Subscriber:
                     recv_time = time.time()
                     if 'header' in data:
                         if data['header'] == 'Message':
-                            if abs(recv_time - data['TimeStamp']) > 0.2:
+                            if abs(recv_time - data['TimeStamp']) > 99:
                                 print('Expired data!')
                             elif self.callback != None:
                                 #print(data)
@@ -189,6 +189,13 @@ class Publisher:
                         print('header error!')
                 else:
                     print('no header in data!')
+            except RuntimeError as detail:
+                print('RuntimeError, ', detail)
+                if detail == 'socket connection broken' or detail == "RuntimeError('socket connection broken')":
+                    self.c.close()
+                    self.wait_connect()
+                    print('close connect and wait new connect')
+                    break
             except Exception as e:
                 print('Pub recv except error:', e)
                 continue                
