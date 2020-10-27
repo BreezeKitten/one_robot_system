@@ -123,9 +123,13 @@ class Publisher:
         self.socket.listen(5)
                 
     def accept_connect(self):
-        self.c, self.addr = self.socket.accept()     # 建立客户端连接
-        print('连接地址：', self.addr)
-        self.receive_msg()
+        try:
+            self.c, self.addr = self.socket.accept()     # 建立客户端连接
+            print('连接地址：', self.addr)
+            self.receive_msg()
+        except Exception as e:
+            print('accept connect error', e)
+            self.wait_connect()
         return        
         
     def wait_connect(self):
@@ -190,12 +194,11 @@ class Publisher:
                 else:
                     print('no header in data!')
             except RuntimeError as detail:
-                print('RuntimeError, ', detail)
-                if detail == 'socket connection broken' or detail == "RuntimeError('socket connection broken')":
-                    self.c.close()
-                    self.wait_connect()
-                    print('close connect and wait new connect')
-                    break
+                print('RuntimeError, ', detail)                
+                self.c.close()
+                self.wait_connect()
+                print('close connect and wait new connect')
+                break
             except Exception as e:
                 print('Pub recv except error:', e)
                 continue                
