@@ -125,7 +125,7 @@ class Publisher:
     def accept_connect(self):
         try:
             self.c, self.addr = self.socket.accept()     # 建立客户端连接
-            print('连接地址：', self.addr)
+            print('Connect Address：', self.addr)
             self.receive_msg()
         except Exception as e:
             print('accept connect error', e)
