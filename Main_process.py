@@ -237,7 +237,11 @@ else:
                     Navi_process(sub)
             else:
                 Command_CB({'V':0, 'W':0})
-            rate.sleep()
+            try:
+                rate.sleep()
+            except Exception as e:
+                print('ROS rate error', e)
+                break
         
         
         sub.disconnect()
