@@ -28,4 +28,28 @@ ros_pub_tool.py:
   
   此檔案用於在模擬或實驗中的操作介面
 
-ggg
+# 操作流程
+
+(NUC)
+
+  roscore
+  
+  cd 放置路徑/one_robot_system
+  
+  python all_robot_publisher.py(or FB_all_robot_publisher.py) N(機器人數量)
+  
+(TX2)
+
+  cd 放置路徑/one_robot_system
+  
+  python3 Navigation_core.py
+  
+  python Main_process.py robot?(?表示機器人編號)
+  
+  (此時應會看到Navigation_core.py和all_robot_publisher.py上出現連接資訊)
+  
+(NUC)
+  
+  回到all_robot_publisher.py的視窗，輸入'Start'，開始發布資訊給各TX2
+  
+  python ros_pub_tool.py N(機器人數量) 開啟操作介面
