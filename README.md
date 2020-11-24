@@ -48,8 +48,18 @@ ros_pub_tool.py:
   
   (此時應會看到Navigation_core.py和all_robot_publisher.py上出現連接資訊)
   
+>> 根據需求，開gazebo進行模擬或實際開啟機器人 <<
+  
 (NUC)
   
   回到all_robot_publisher.py的視窗，輸入'Start'，開始發布資訊給各TX2
   
   python ros_pub_tool.py N(機器人數量) 開啟操作介面
+
+# 備註
+
+若單純只是要修改Main_process.py的參數，可以直接關閉Main_process.py
+
+其他檔案會自動重新等待訂閱
+
+於Main_process.py重開完畢後，在all_robot_publisher.py重新輸入'Start'，就會繼續發布資訊
