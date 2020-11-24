@@ -226,7 +226,7 @@ else:
         arrived_count = 0
         while not rospy.is_shutdown():
             if start_flag:
-                if Check_Goal(Main_agent, Calculate_distance(0.1, 0.1, 0, 0), math.pi/15):
+                if Check_Goal(Main_agent, Calculate_distance(0.25, 0.25, 0, 0), math.pi*2/10):
                     print('Arrived!')
                     Command_CB({'V':0, 'W':0})
                     arrived_count += 1
