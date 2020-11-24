@@ -48,7 +48,7 @@ ros_pub_tool.py:
   
   (此時應會看到Navigation_core.py和all_robot_publisher.py上出現連接資訊)
   
->> 根據需求，開gazebo進行模擬或實際開啟機器人 <<
+>> 根據需求，開gazebo進行模擬或實際開啟機器人 
   
 (NUC)
   
